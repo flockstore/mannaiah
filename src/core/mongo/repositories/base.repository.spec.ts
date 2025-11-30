@@ -238,6 +238,29 @@ describe('BaseRepository', () => {
         originalUpdatedAt.getTime(),
       )
     })
+
+    it('should ignore isDeleted in update payload', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+
+      // Try to manually set isDeleted to true via update
+      const updated = await lastValueFrom(
+        repository.update(created._id, {
+          value: 99,
+          isDeleted: true,
+        } as any),
+      )
+
+      expect(updated).toBeDefined()
+      expect(updated?.value).toBe(99)
+      expect(updated?.isDeleted).toBe(false)
+
+      // Verify it's still not deleted in DB
+      const found = await lastValueFrom(repository.findById(created._id))
+      expect(found).toBeDefined()
+      expect(found?.isDeleted).toBe(false)
+    })
   })
 
   describe('softDelete', () => {

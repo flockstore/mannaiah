@@ -9,7 +9,7 @@ import { BaseDocument, QueryOptions } from '../schemas/base.schema'
  * @template T - The document interface extending BaseDocument
  */
 export class BaseRepository<T extends BaseDocument> {
-  constructor(protected readonly model: Model<T>) {}
+  constructor(protected readonly model: Model<T>) { }
 
   /**
    * Create a new document
@@ -86,6 +86,11 @@ export class BaseRepository<T extends BaseDocument> {
     data: UpdateQuery<T>,
     options?: QueryOptions,
   ): Observable<T | null> {
+    // Prevent manual update of isDeleted
+    if (data && typeof data === 'object' && 'isDeleted' in data) {
+      delete (data as any).isDeleted
+    }
+
     return from(
       this.model
         .findByIdAndUpdate(id, data, { new: true })

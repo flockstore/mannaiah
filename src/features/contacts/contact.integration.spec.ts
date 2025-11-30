@@ -145,7 +145,15 @@ describe('ContactService (Integration)', () => {
         email: 'another@acme.com',
       }
 
-      await expect(lastValueFrom(service.createContact(dto2))).rejects.toThrow()
+      // Usually, a global filter is the best way to handle this for all services.
+      // So here in the service test, we still expect an error, but in a real app request it would be 409.
+      // Let's verify it throws the MongoError with code 11000.
+      try {
+        await lastValueFrom(service.createContact(dto2))
+        fail('Should have thrown an error')
+      } catch (error: any) {
+        expect(error.code).toBe(11000)
+      }
     })
   })
 
@@ -214,6 +222,27 @@ describe('ContactService (Integration)', () => {
       )
 
       expect(updated?.phone).toBe('1234567')
+    })
+
+    it('should ignore isDeleted in update payload', async () => {
+      const dto: ContactCreate = {
+        legalName: 'Acme Corp',
+        documentType: DocumentType.NIT,
+        documentNumber: '12345678901',
+        email: 'contact@acme.com',
+      }
+
+      const created = await lastValueFrom(service.createContact(dto))
+
+      const updateDto: any = {
+        isDeleted: true,
+      }
+
+      const updated = await lastValueFrom(
+        service.updateContact(created._id.toString(), updateDto),
+      )
+
+      expect(updated?.isDeleted).toBe(false)
     })
 
     it('should validate names on update', async () => {
