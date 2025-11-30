@@ -15,7 +15,7 @@ async function bootstrap() {
     .build()
   const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('spec', app, document, {
-    swaggerUrl: '/spec/swagger.json',
+    jsonDocumentUrl: '/spec/swagger.json',
   })
 
   await app.listen(port)
