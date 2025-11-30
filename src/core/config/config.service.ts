@@ -33,4 +33,30 @@ export class ConfigService extends NestConfigService<CoreEnvironmentVariables> {
     }
     return nodeEnv
   }
+
+  /**
+   * Gets the Logto Issuer URL.
+   * @returns The issuer URL.
+   * @throws Error if LOGTO_ISSUER is not defined.
+   */
+  get logtoIssuer(): string {
+    const issuer = this.get('LOGTO_ISSUER', { infer: true })
+    if (issuer === undefined) {
+      throw new Error('LOGTO_ISSUER is not defined')
+    }
+    return issuer
+  }
+
+  /**
+   * Gets the Logto Audience.
+   * @returns The audience string.
+   * @throws Error if LOGTO_AUDIENCE is not defined.
+   */
+  get logtoAudience(): string {
+    const audience = this.get('LOGTO_AUDIENCE', { infer: true })
+    if (audience === undefined) {
+      throw new Error('LOGTO_AUDIENCE is not defined')
+    }
+    return audience
+  }
 }

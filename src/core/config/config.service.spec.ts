@@ -10,6 +10,8 @@ describe('ConfigService', () => {
   beforeEach(async () => {
     process.env.MANNAIAH_PORT = '3000'
     process.env.NODE_ENV = 'test'
+    process.env.LOGTO_ISSUER = 'https://logto.dev'
+    process.env.LOGTO_AUDIENCE = 'https://api.mannaiah.com'
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [

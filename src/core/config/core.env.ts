@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber } from 'class-validator'
+import { IsEnum, IsNumber, IsString } from 'class-validator'
 
 /**
  * Environment variables for the application core.
@@ -27,4 +27,16 @@ export class CoreEnvironmentVariables {
    */
   @IsNumber()
   MANNAIAH_PORT: number = 3000
+
+  /**
+   * The Logto Issuer URL.
+   */
+  @IsString()
+  LOGTO_ISSUER: string
+
+  /**
+   * The Logto Audience.
+   */
+  @IsString()
+  LOGTO_AUDIENCE: string
 }
