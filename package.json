@@ -23,9 +23,11 @@
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/mongoose": "^11.0.3",
     "@nestjs/platform-express": "^11.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
+    "mongoose": "^8.20.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -44,6 +46,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
     "jest": "^30.0.0",
+    "mongodb-memory-server": "^10.3.0",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
@@ -69,6 +72,8 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "globalSetup": "<rootDir>/../test/mongo-global-setup.ts",
+    "globalTeardown": "<rootDir>/../test/mongo-global-teardown.ts"
   }
 }
