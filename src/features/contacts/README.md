@@ -9,6 +9,7 @@ The following scopes are required to access the endpoints:
 | Endpoint | Method | Scope | Description |
 | :--- | :--- | :--- | :--- |
 | `/contacts` | `GET` | `contacts:read` | List all contacts (by email query parameter) |
+| `/contacts/document/:documentType/:documentNumber` | `GET` | `contacts:read` | Get a contact by document type and number |
 | `/contacts/:id` | `GET` | `contacts:read` | Get a specific contact by ID |
 | `/contacts` | `POST` | `contacts:create` | Create a new contact |
 | `/contacts/:id` | `PUT` | `contacts:update` | Update an existing contact |

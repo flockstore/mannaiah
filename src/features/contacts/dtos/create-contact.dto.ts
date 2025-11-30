@@ -9,6 +9,12 @@ import {
 } from 'class-validator'
 import { DocumentType } from '../interfaces/contact.interface'
 
+/**
+ * DTO for creating a new contact.
+ * A contact can be either a legal entity (with legalName) or a natural person
+ * (with firstName and lastName), but not both.
+ * Email and document information are always required.
+ */
 export class ContactCreate {
   @ApiProperty({
     enum: DocumentType,

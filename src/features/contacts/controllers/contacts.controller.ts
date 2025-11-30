@@ -23,7 +23,7 @@ import { map } from 'rxjs/operators'
 import { ContactService } from '../services/contact.service'
 import { ContactCreate } from '../dtos/create-contact.dto'
 import { ContactUpdate } from '../dtos/update-contact.dto'
-import { ContactDocument } from '../interfaces/contact.interface'
+import { ContactDocument, DocumentType } from '../interfaces/contact.interface'
 import { AuthGuard } from '@nestjs/passport'
 import { PermissionsGuard } from '../../../auth/permissions.guard'
 import { RequirePermissions } from '../../../auth/permissions.decorator'
@@ -54,6 +54,37 @@ export class ContactsController {
   @RequirePermissions('contacts:read')
   findAll(@Query('email') email: string): Observable<ContactDocument[]> {
     return this.contactService.findByEmail(email)
+  }
+
+  @Get('document/:documentType/:documentNumber')
+  @ApiOperation({ summary: 'Get a contact by document type and number' })
+  @ApiParam({
+    name: 'documentType',
+    description: 'Type of document (CC, CE, TI, PAS, NIT, OTHER)',
+    enumName: 'DocumentType',
+    enum: ['CC', 'CE', 'TI', 'PAS', 'NIT', 'OTHER'],
+  })
+  @ApiParam({
+    name: 'documentNumber',
+    description: 'Document number',
+  })
+  @ApiResponse({ status: 200, description: 'Return the contact.' })
+  @ApiResponse({ status: 404, description: 'Contact not found.' })
+  @RequirePermissions('contacts:read')
+  findByDocument(
+    @Param('documentType') documentType: DocumentType,
+    @Param('documentNumber') documentNumber: string,
+  ): Observable<ContactDocument | null> {
+    return this.contactService.findByDocument(documentType, documentNumber).pipe(
+      map((contact) => {
+        if (!contact) {
+          throw new NotFoundException(
+            `Contact with document ${documentType} ${documentNumber} not found`,
+          )
+        }
+        return contact
+      }),
+    )
   }
 
   @Get(':id')

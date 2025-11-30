@@ -37,6 +37,7 @@ describe('ContactsController', () => {
     createContact: jest.fn(),
     findByEmail: jest.fn(),
     findById: jest.fn(),
+    findByDocument: jest.fn(),
     updateContact: jest.fn(),
     softDelete: jest.fn(),
   }
@@ -141,6 +142,45 @@ describe('ContactsController', () => {
           done()
         },
         error: done.fail,
+      })
+    })
+  })
+
+  describe('findByDocument', () => {
+    it('should return a contact by document type and number', (done) => {
+      const documentType = DocumentType.CC
+      const documentNumber = '123456789'
+
+      mockContactService.findByDocument.mockReturnValue(of(mockContactDocument))
+
+      controller.findByDocument(documentType, documentNumber).subscribe({
+        next: (result) => {
+          expect(result).toEqual(mockContactDocument)
+          expect(service.findByDocument).toHaveBeenCalledWith(
+            documentType,
+            documentNumber,
+          )
+          done()
+        },
+        error: done.fail,
+      })
+    })
+
+    it('should throw NotFoundException when contact not found by document', (done) => {
+      const documentType = DocumentType.CC
+      const documentNumber = '999999999'
+
+      mockContactService.findByDocument.mockReturnValue(of(null))
+
+      controller.findByDocument(documentType, documentNumber).subscribe({
+        next: () => done.fail('Should have thrown NotFoundException'),
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException)
+          expect(err.message).toBe(
+            `Contact with document ${documentType} ${documentNumber} not found`,
+          )
+          done()
+        },
       })
     })
   })
