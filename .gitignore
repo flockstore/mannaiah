@@ -55,3 +55,6 @@ pnpm-lock.yaml
 
 # dist
 /dist
+
+# environment
+.env
