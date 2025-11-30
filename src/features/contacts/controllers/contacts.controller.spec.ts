@@ -7,6 +7,8 @@ import { ContactCreate } from '../dtos/create-contact.dto'
 import { ContactUpdate } from '../dtos/update-contact.dto'
 import { ContactDocument, DocumentType } from '../interfaces/contact.interface'
 import { Types } from 'mongoose'
+import { AuthGuard } from '@nestjs/passport'
+import { PermissionsGuard } from '../../../auth/permissions.guard'
 
 describe('ContactsController', () => {
   let controller: ContactsController
@@ -48,7 +50,12 @@ describe('ContactsController', () => {
           useValue: mockContactService,
         },
       ],
-    }).compile()
+    })
+      .overrideGuard(AuthGuard('jwt'))
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile()
 
     controller = module.get<ContactsController>(ContactsController)
     service = module.get<ContactService>(ContactService)

@@ -8,6 +8,7 @@ import { ContactService } from './services/contact.service'
  * Contacts feature module
  */
 import { ContactsController } from './controllers/contacts.controller'
+import { AuthModule } from '../../auth/auth.module'
 
 /**
  * Contacts feature module
@@ -15,9 +16,10 @@ import { ContactsController } from './controllers/contacts.controller'
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Contact, schema: ContactSchema }]),
+    AuthModule,
   ],
   controllers: [ContactsController],
   providers: [ContactRepository, ContactService],
   exports: [ContactService, ContactRepository],
 })
-export class ContactsModule {}
+export class ContactsModule { }

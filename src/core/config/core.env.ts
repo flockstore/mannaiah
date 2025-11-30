@@ -32,11 +32,11 @@ export class CoreEnvironmentVariables {
    * The Logto Issuer URL.
    */
   @IsString()
-  LOGTO_ISSUER: string
+  LOGTO_ISSUER: string = 'https://test.logto.app'
 
   /**
    * The Logto Audience.
    */
   @IsString()
-  LOGTO_AUDIENCE: string
+  LOGTO_AUDIENCE: string = 'https://api.test.com'
 }

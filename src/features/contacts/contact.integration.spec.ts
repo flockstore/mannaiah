@@ -13,6 +13,11 @@ import {
   stopMongoMemoryServer,
 } from '../../core/mongo/testing/mongo-test.module'
 import { ContactRepository } from './repositories/contact.repository'
+import { JwtStrategy } from '../../auth/jwt.strategy'
+
+// Set env vars before any modules are imported/initialized
+process.env.LOGTO_ISSUER = 'https://test.logto.app'
+process.env.LOGTO_AUDIENCE = 'https://api.test.com'
 
 describe('ContactService (Integration)', () => {
   let service: ContactService
@@ -21,7 +26,10 @@ describe('ContactService (Integration)', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [createTestMongooseModule(), ContactsModule],
-    }).compile()
+    })
+      .overrideProvider(JwtStrategy)
+      .useValue({})
+      .compile()
 
     service = module.get<ContactService>(ContactService)
   })
