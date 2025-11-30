@@ -17,6 +17,11 @@ export class BaseRepository<T extends BaseDocument> {
    * @returns Observable emitting the created document
    */
   create(data: Partial<T>): Observable<T> {
+    // Prevent manual setting of isDeleted on creation
+    if (data && typeof data === 'object' && 'isDeleted' in data) {
+      delete (data as any).isDeleted
+    }
+
     return from(this.model.create(data))
   }
 

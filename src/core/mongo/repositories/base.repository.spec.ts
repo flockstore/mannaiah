@@ -69,6 +69,22 @@ describe('BaseRepository', () => {
       expect(doc.createdAt).toBeDefined()
       expect(doc.updatedAt).toBeDefined()
     })
+
+    it('should ignore isDeleted in create payload', async () => {
+      const doc = await lastValueFrom(
+        repository.create({
+          name: 'Test',
+          value: 42,
+          isDeleted: true,
+        } as any),
+      )
+
+      expect(doc).toBeDefined()
+      expect(doc.name).toBe('Test')
+      expect(doc.value).toBe(42)
+      expect(doc.isDeleted).toBe(false)
+      expect(doc.deletedAt).toBeNull()
+    })
   })
 
   describe('findById', () => {
