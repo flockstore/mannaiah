@@ -9,7 +9,7 @@ import {
 } from 'class-validator'
 import { DocumentType } from '../interfaces/contact.interface'
 
-export class CreateContactDto {
+export class ContactCreate {
     @ApiProperty({ enum: DocumentType, description: 'Type of identification document' })
     @IsEnum(DocumentType)
     @IsNotEmpty()

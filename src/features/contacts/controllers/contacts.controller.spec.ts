@@ -3,8 +3,8 @@ import { NotFoundException } from '@nestjs/common'
 import { of, throwError } from 'rxjs'
 import { ContactsController } from './contacts.controller'
 import { ContactService } from '../services/contact.service'
-import { CreateContactDto } from '../dtos/create-contact.dto'
-import { UpdateContactDto } from '../dtos/update-contact.dto'
+import { ContactCreate } from '../dtos/create-contact.dto'
+import { ContactUpdate } from '../dtos/update-contact.dto'
 import { ContactDocument, DocumentType } from '../interfaces/contact.interface'
 import { Types } from 'mongoose'
 
@@ -63,7 +63,7 @@ describe('ContactsController', () => {
 
     describe('create', () => {
         it('should create a contact successfully', (done) => {
-            const createDto: CreateContactDto = {
+            const createDto: ContactCreate = {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -84,7 +84,7 @@ describe('ContactsController', () => {
         })
 
         it('should propagate errors from service', (done) => {
-            const createDto: CreateContactDto = {
+            const createDto: ContactCreate = {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -173,7 +173,7 @@ describe('ContactsController', () => {
     describe('update', () => {
         it('should update a contact successfully', (done) => {
             const id = mockContactDocument._id.toString()
-            const updateDto: UpdateContactDto = {
+            const updateDto: ContactUpdate = {
                 phone: '+9876543210',
                 address: '456 Oak Ave',
             }
@@ -193,7 +193,7 @@ describe('ContactsController', () => {
 
         it('should throw NotFoundException when contact not found', (done) => {
             const id = new Types.ObjectId().toString()
-            const updateDto: UpdateContactDto = {
+            const updateDto: ContactUpdate = {
                 phone: '+9876543210',
             }
 
@@ -211,7 +211,7 @@ describe('ContactsController', () => {
 
         it('should propagate validation errors from service', (done) => {
             const id = mockContactDocument._id.toString()
-            const updateDto: UpdateContactDto = {
+            const updateDto: ContactUpdate = {
                 legalName: 'Company Inc',
                 firstName: 'John',
             }

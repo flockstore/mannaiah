@@ -4,9 +4,9 @@ import { lastValueFrom } from 'rxjs'
 import { ContactsModule } from './contacts.module'
 import { ContactService } from './services/contact.service'
 import {
-    CreateContactDto,
-    DocumentType,
-    UpdateContactDto,
+    ContactCreate,
+    DocumentType, // DocumentType is still used in tests, so it must remain imported.
+    ContactUpdate,
 } from './interfaces/contact.interface'
 import {
     createTestMongooseModule,
@@ -43,7 +43,7 @@ describe('ContactService (Integration)', () => {
 
     describe('createContact', () => {
         it('should create a contact with legal name', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -61,7 +61,7 @@ describe('ContactService (Integration)', () => {
         })
 
         it('should create a contact with personal names', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 firstName: 'John',
                 lastName: 'Doe',
                 documentType: DocumentType.CC,
@@ -78,7 +78,7 @@ describe('ContactService (Integration)', () => {
         })
 
         it('should fail if both legalName and personal names are provided', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 firstName: 'John',
                 documentType: DocumentType.NIT,
@@ -92,7 +92,7 @@ describe('ContactService (Integration)', () => {
         })
 
         it('should fail if neither legalName nor full personal names are provided', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 firstName: 'John',
                 // Missing lastName
                 documentType: DocumentType.CC,
@@ -106,7 +106,7 @@ describe('ContactService (Integration)', () => {
         })
 
         it('should fail if duplicate document number', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -116,7 +116,7 @@ describe('ContactService (Integration)', () => {
             await lastValueFrom(service.createContact(dto))
 
             // Try to create another with same document
-            const dto2: CreateContactDto = {
+            const dto2: ContactCreate = {
                 legalName: 'Another Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -129,7 +129,7 @@ describe('ContactService (Integration)', () => {
 
     describe('findById', () => {
         it('should find a contact by ID', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -153,7 +153,7 @@ describe('ContactService (Integration)', () => {
 
     describe('updateContact', () => {
         it('should update contact fields', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -162,7 +162,7 @@ describe('ContactService (Integration)', () => {
 
             const created = await lastValueFrom(service.createContact(dto))
 
-            const updateDto: UpdateContactDto = {
+            const updateDto: ContactUpdate = {
                 email: 'new@acme.com',
             }
 
@@ -176,7 +176,7 @@ describe('ContactService (Integration)', () => {
         })
 
         it('should validate names on update', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -186,7 +186,7 @@ describe('ContactService (Integration)', () => {
             const created = await lastValueFrom(service.createContact(dto))
 
             // Try to add first name to a legal entity
-            const updateDto: UpdateContactDto = {
+            const updateDto: ContactUpdate = {
                 firstName: 'John',
             }
 
@@ -198,7 +198,7 @@ describe('ContactService (Integration)', () => {
 
     describe('softDelete and restore', () => {
         it('should soft delete a contact', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -218,7 +218,7 @@ describe('ContactService (Integration)', () => {
         })
 
         it('should restore a contact', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -241,7 +241,7 @@ describe('ContactService (Integration)', () => {
 
     describe('findByDocument', () => {
         it('should find contact by document', async () => {
-            const dto: CreateContactDto = {
+            const dto: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
@@ -261,14 +261,14 @@ describe('ContactService (Integration)', () => {
 
     describe('findByEmail', () => {
         it('should find contacts by email', async () => {
-            const dto1: CreateContactDto = {
+            const dto1: ContactCreate = {
                 legalName: 'Acme Corp',
                 documentType: DocumentType.NIT,
                 documentNumber: '12345678901',
                 email: 'contact@acme.com',
             }
 
-            const dto2: CreateContactDto = {
+            const dto2: ContactCreate = {
                 firstName: 'John',
                 lastName: 'Doe',
                 documentType: DocumentType.CC,

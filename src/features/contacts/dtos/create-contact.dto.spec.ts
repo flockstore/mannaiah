@@ -1,13 +1,13 @@
 import 'reflect-metadata'
 import { validate } from 'class-validator'
 import { plainToClass } from 'class-transformer'
-import { CreateContactDto } from './create-contact.dto'
+import { ContactCreate } from './create-contact.dto'
 import { DocumentType } from '../interfaces/contact.interface'
 
-describe('CreateContactDto', () => {
+describe('ContactCreate', () => {
     describe('Valid DTOs', () => {
         it('should validate a complete DTO with personal names', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -24,7 +24,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should validate a DTO with legal name', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.NIT,
                 documentNumber: '900123456',
                 legalName: 'Acme Corporation',
@@ -36,7 +36,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should validate a minimal DTO with personal names', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'Jane',
@@ -59,7 +59,7 @@ describe('CreateContactDto', () => {
             ]
 
             for (const docType of documentTypes) {
-                const dto = plainToClass(CreateContactDto, {
+                const dto = plainToClass(ContactCreate, {
                     documentType: docType,
                     documentNumber: '123456789',
                     firstName: 'Test',
@@ -75,7 +75,7 @@ describe('CreateContactDto', () => {
 
     describe('Invalid DTOs', () => {
         it('should fail when documentType is missing', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentNumber: '123456789',
                 firstName: 'John',
                 lastName: 'Doe',
@@ -88,7 +88,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should fail when documentType is invalid', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: 'INVALID' as DocumentType,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -103,7 +103,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should fail when documentNumber is missing', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 firstName: 'John',
                 lastName: 'Doe',
@@ -116,7 +116,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should fail when email is missing', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -130,7 +130,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should fail when email is invalid', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -145,7 +145,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should fail when only firstName is provided without lastName', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -159,7 +159,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should fail when only lastName is provided without firstName', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 lastName: 'Doe',
@@ -173,7 +173,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should fail when neither legalName nor personal names are provided', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 email: 'test@example.com',
@@ -198,7 +198,7 @@ describe('CreateContactDto', () => {
             ]
 
             for (const email of validEmails) {
-                const dto = plainToClass(CreateContactDto, {
+                const dto = plainToClass(ContactCreate, {
                     documentType: DocumentType.CC,
                     documentNumber: '123456789',
                     firstName: 'John',
@@ -212,7 +212,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should validate with all optional fields provided', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',
@@ -229,7 +229,7 @@ describe('CreateContactDto', () => {
         })
 
         it('should validate with minimal required fields', async () => {
-            const dto = plainToClass(CreateContactDto, {
+            const dto = plainToClass(ContactCreate, {
                 documentType: DocumentType.CC,
                 documentNumber: '123456789',
                 firstName: 'John',

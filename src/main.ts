@@ -12,7 +12,6 @@ async function bootstrap() {
     .setTitle('Mannaiah API')
     .setDescription('Mannaiah is the core of Flock inhouse ERP-like software.')
     .setVersion('0.0.1')
-    .addTag('contacts', 'Manage contacts and customer information')
     .build()
   const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('api', app, document)

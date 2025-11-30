@@ -4,8 +4,8 @@ import { map, switchMap, tap } from 'rxjs/operators'
 import { BaseService } from '../../../core/mongo/services/base.service'
 import {
     ContactDocument,
-    CreateContactDto,
-    UpdateContactDto,
+    ContactCreate,
+    ContactUpdate,
     DocumentType,
 } from '../interfaces/contact.interface'
 import { ContactRepository } from '../repositories/contact.repository'
@@ -59,7 +59,7 @@ export class ContactService extends BaseService<ContactDocument> {
      * @param createDto - Data to create contact
      * @returns Observable emitting the created contact
      */
-    createContact(createDto: CreateContactDto): Observable<ContactDocument> {
+    createContact(createDto: ContactCreate): Observable<ContactDocument> {
         return of(createDto).pipe(
             tap((dto) =>
                 this.validateNames(dto.legalName, dto.firstName, dto.lastName),
@@ -98,7 +98,7 @@ export class ContactService extends BaseService<ContactDocument> {
      */
     updateContact(
         id: string,
-        updateDto: UpdateContactDto,
+        updateDto: ContactUpdate,
     ): Observable<ContactDocument | null> {
         // If names are being updated, we need to validate against existing data + updates
         if (

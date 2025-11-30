@@ -19,8 +19,8 @@ import {
 import { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
 import { ContactService } from '../services/contact.service'
-import { CreateContactDto } from '../dtos/create-contact.dto'
-import { UpdateContactDto } from '../dtos/update-contact.dto'
+import { ContactCreate } from '../dtos/create-contact.dto'
+import { ContactUpdate } from '../dtos/update-contact.dto'
 import { ContactDocument } from '../interfaces/contact.interface'
 
 @ApiTags('contacts')
@@ -35,7 +35,7 @@ export class ContactsController {
         description: 'The contact has been successfully created.',
     })
     @ApiResponse({ status: 400, description: 'Bad Request.' })
-    create(@Body() createContactDto: CreateContactDto): Observable<ContactDocument> {
+    create(@Body() createContactDto: ContactCreate): Observable<ContactDocument> {
         return this.contactService.createContact(createContactDto)
     }
 
@@ -73,7 +73,7 @@ export class ContactsController {
     @ApiResponse({ status: 404, description: 'Contact not found.' })
     update(
         @Param('id') id: string,
-        @Body() updateContactDto: UpdateContactDto,
+        @Body() updateContactDto: ContactUpdate,
     ): Observable<ContactDocument> {
         return this.contactService.updateContact(id, updateContactDto).pipe(
             map((contact) => {
