@@ -7,7 +7,10 @@ import { BadRequestException } from '@nestjs/common'
  */
 export class InvalidNameCombinationError extends BadRequestException {
   constructor() {
-    super('Cannot have both legalName and personal names')
+    super({
+      message: 'Cannot have both legalName and personal names',
+      details: 'A contact must be either a legal entity (with legalName) OR a natural person (with firstName and lastName), but not both',
+    })
   }
 }
 
@@ -17,6 +20,9 @@ export class InvalidNameCombinationError extends BadRequestException {
  */
 export class MissingNameError extends BadRequestException {
   constructor() {
-    super('Must provide either legalName OR both firstName and lastName')
+    super({
+      message: 'Must provide either legalName OR both firstName and lastName',
+      details: 'A contact requires either a legalName field OR both firstName and lastName fields',
+    })
   }
 }

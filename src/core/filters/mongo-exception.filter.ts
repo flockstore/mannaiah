@@ -3,7 +3,6 @@ import {
     Catch,
     ArgumentsHost,
     HttpStatus,
-    ConflictException,
 } from '@nestjs/common'
 import { MongoServerError } from 'mongodb'
 import { Response } from 'express'
@@ -19,7 +18,6 @@ export class MongoExceptionFilter implements ExceptionFilter {
             response.status(status).json({
                 statusCode: status,
                 message: 'Duplicate key error',
-                error: 'Conflict',
                 details: exception.keyValue,
             })
         } else {
@@ -27,6 +25,7 @@ export class MongoExceptionFilter implements ExceptionFilter {
             response.status(status).json({
                 statusCode: status,
                 message: 'Internal server error',
+                details: null,
             })
         }
     }

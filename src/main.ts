@@ -2,9 +2,8 @@ import { NestFactory } from '@nestjs/core'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { AppModule } from './app.module'
 import { ConfigService } from './core/config/config.service'
-
 import { ValidationPipe } from '@nestjs/common'
-import { MongoExceptionFilter } from './core/filters/mongo-exception.filter'
+import { AllExceptionsFilter } from './core/filters/all-exceptions.filter'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -12,7 +11,7 @@ async function bootstrap() {
   const port = configService.port
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }))
-  app.useGlobalFilters(new MongoExceptionFilter())
+  app.useGlobalFilters(new AllExceptionsFilter())
 
   const config = new DocumentBuilder()
     .setTitle('Mannaiah API')

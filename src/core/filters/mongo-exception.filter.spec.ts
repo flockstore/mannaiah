@@ -33,8 +33,7 @@ describe('MongoExceptionFilter', () => {
         expect(mockResponse.json).toHaveBeenCalledWith({
             statusCode: HttpStatus.CONFLICT,
             message: 'Duplicate key error',
-            error: 'Conflict',
-            details: { email: 'test@example.com' },
+            details: exception.keyValue,
         })
     })
 
@@ -52,6 +51,7 @@ describe('MongoExceptionFilter', () => {
         expect(mockResponse.json).toHaveBeenCalledWith({
             statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
             message: 'Internal server error',
+            details: null,
         })
     })
 })
