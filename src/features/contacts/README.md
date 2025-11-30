@@ -27,10 +27,14 @@ The wildcard pattern works for any resource, automatically granting access when 
 
 ## Configuration
 
-Ensure the following environment variables are set:
+The following environment variables **must be set** for this module to work:
 
 - **`LOGTO_ISSUER`**: The Logto Issuer URL (e.g., `https://your-tenant.logto.app`)
-- **`LOGTO_AUDIENCE`**: The Logto Audience identifier for your API
+- **`LOGTO_AUDIENCE`**: The Logto Audience identifier for your API (e.g., `https://api.yourapp.com`)
+
+**Important**: The application will fail to start if these variables are not provided.
+
+See the main README for complete environment variable documentation.
 
 ## Authentication
 

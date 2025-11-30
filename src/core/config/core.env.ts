@@ -30,13 +30,15 @@ export class CoreEnvironmentVariables {
 
   /**
    * The Logto Issuer URL.
+   * Required - application will fail to start if not provided.
    */
   @IsString()
-  LOGTO_ISSUER: string = 'https://test.logto.app'
+  LOGTO_ISSUER: string
 
   /**
    * The Logto Audience.
+   * Required - application will fail to start if not provided.
    */
   @IsString()
-  LOGTO_AUDIENCE: string = 'https://api.test.com'
+  LOGTO_AUDIENCE: string
 }

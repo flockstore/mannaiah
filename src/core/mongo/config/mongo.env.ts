@@ -6,7 +6,7 @@ import { IsString, IsOptional } from 'class-validator'
 export class MongoEnvironmentVariables {
   /**
    * The connection string for the MongoDB database.
-   * This is a required variable.
+   * Required - application will fail to start if not provided.
    */
   @IsString()
   MANNAIAH_MONGO_URI: string

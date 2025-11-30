@@ -31,6 +31,30 @@
 $ npm install
 ```
 
+## Environment Variables
+
+The application requires the following environment variables to be set:
+
+### Required Variables
+
+- **`MANNAIAH_MONGO_URI`**: MongoDB connection string (e.g., `mongodb://localhost:27017/mannaiah`)
+- **`LOGTO_ISSUER`**: Logto Issuer URL (e.g., `https://your-tenant.logto.app`)
+- **`LOGTO_AUDIENCE`**: Logto API Audience identifier (e.g., `https://api.yourapp.com`)
+
+### Optional Variables
+
+- **`MANNAIAH_PORT`**: Port number for the application (default: `3000`)
+- **`NODE_ENV`**: Environment (`development`, `production`, `test`, default: `development`)
+- **`MANNAIAH_MONGO_DB_NAME`**: MongoDB database name (default: `mannaiah`)
+
+Copy `.env.example` to `.env` and fill in the required values:
+
+```bash
+cp .env.example .env
+```
+
+**Note**: The application will fail to start if any required environment variable is missing.
+
 ## Compile and run the project
 
 ```bash
