@@ -7,10 +7,16 @@ import { ContactService } from './services/contact.service'
 /**
  * Contacts feature module
  */
+import { ContactsController } from './controllers/contacts.controller'
+
+/**
+ * Contacts feature module
+ */
 @Module({
     imports: [
         MongooseModule.forFeature([{ name: Contact, schema: ContactSchema }]),
     ],
+    controllers: [ContactsController],
     providers: [ContactRepository, ContactService],
     exports: [ContactService, ContactRepository],
 })

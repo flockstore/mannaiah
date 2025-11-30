@@ -1,0 +1,99 @@
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Param,
+    Delete,
+    Put,
+    NotFoundException,
+    Query,
+} from '@nestjs/common'
+import {
+    ApiTags,
+    ApiOperation,
+    ApiResponse,
+    ApiParam,
+    ApiQuery,
+} from '@nestjs/swagger'
+import { Observable } from 'rxjs'
+import { map } from 'rxjs/operators'
+import { ContactService } from '../services/contact.service'
+import { CreateContactDto } from '../dtos/create-contact.dto'
+import { UpdateContactDto } from '../dtos/update-contact.dto'
+import { ContactDocument } from '../interfaces/contact.interface'
+
+@ApiTags('contacts')
+@Controller('contacts')
+export class ContactsController {
+    constructor(private readonly contactService: ContactService) { }
+
+    @Post()
+    @ApiOperation({ summary: 'Create a new contact' })
+    @ApiResponse({
+        status: 201,
+        description: 'The contact has been successfully created.',
+    })
+    @ApiResponse({ status: 400, description: 'Bad Request.' })
+    create(@Body() createContactDto: CreateContactDto): Observable<ContactDocument> {
+        return this.contactService.createContact(createContactDto)
+    }
+
+    @Get()
+    @ApiOperation({ summary: 'Get contacts by email' })
+    @ApiQuery({ name: 'email', required: true, type: String })
+    @ApiResponse({ status: 200, description: 'Return all contacts.' })
+    findAll(@Query('email') email: string): Observable<ContactDocument[]> {
+        return this.contactService.findByEmail(email)
+    }
+
+    @Get(':id')
+    @ApiOperation({ summary: 'Get a contact by id' })
+    @ApiParam({ name: 'id', description: 'Contact ID' })
+    @ApiResponse({ status: 200, description: 'Return the contact.' })
+    @ApiResponse({ status: 404, description: 'Contact not found.' })
+    findOne(@Param('id') id: string): Observable<ContactDocument> {
+        return this.contactService.findById(id).pipe(
+            map((contact) => {
+                if (!contact) {
+                    throw new NotFoundException(`Contact with ID ${id} not found`)
+                }
+                return contact
+            }),
+        )
+    }
+
+    @Put(':id')
+    @ApiOperation({ summary: 'Update a contact' })
+    @ApiParam({ name: 'id', description: 'Contact ID' })
+    @ApiResponse({
+        status: 200,
+        description: 'The contact has been successfully updated.',
+    })
+    @ApiResponse({ status: 404, description: 'Contact not found.' })
+    update(
+        @Param('id') id: string,
+        @Body() updateContactDto: UpdateContactDto,
+    ): Observable<ContactDocument> {
+        return this.contactService.updateContact(id, updateContactDto).pipe(
+            map((contact) => {
+                if (!contact) {
+                    throw new NotFoundException(`Contact with ID ${id} not found`)
+                }
+                return contact
+            }),
+        )
+    }
+
+    @Delete(':id')
+    @ApiOperation({ summary: 'Delete a contact' })
+    @ApiParam({ name: 'id', description: 'Contact ID' })
+    @ApiResponse({
+        status: 200,
+        description: 'The contact has been successfully deleted.',
+    })
+    @ApiResponse({ status: 404, description: 'Contact not found.' })
+    remove(@Param('id') id: string): Observable<ContactDocument | null> {
+        return this.contactService.softDelete(id)
+    }
+}
