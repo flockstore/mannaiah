@@ -14,7 +14,9 @@ async function bootstrap() {
     .setVersion('0.0.1')
     .build()
   const document = SwaggerModule.createDocument(app, config)
-  SwaggerModule.setup('api', app, document)
+  SwaggerModule.setup('spec', app, document, {
+    swaggerUrl: '/spec/swagger.json',
+  })
 
   await app.listen(port)
 }
