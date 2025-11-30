@@ -7,21 +7,21 @@ import { BaseDocument } from '../schemas/base.schema'
 import { softDeletePlugin } from '../plugins/soft-delete.plugin'
 import { timestampPlugin } from '../plugins/timestamp.plugin'
 import {
-    createTestMongooseModule,
-    stopMongoMemoryServer,
+  createTestMongooseModule,
+  stopMongoMemoryServer,
 } from '../testing/mongo-test.module'
 import { clearCollection } from '../testing/test-helpers'
 
 // Test document interface
 interface TestDocument extends BaseDocument {
-    name: string
-    value: number
+  name: string
+  value: number
 }
 
 // Test schema
 const TestSchema = new Schema<TestDocument>({
-    name: { type: String, required: true },
-    value: { type: Number, required: true },
+  name: { type: String, required: true },
+  value: { type: Number, required: true },
 })
 
 TestSchema.plugin(softDeletePlugin)
@@ -30,359 +30,359 @@ TestSchema.plugin(timestampPlugin)
 const TestModel = 'TestModel'
 
 describe('BaseRepository', () => {
-    let repository: BaseRepository<TestDocument>
-    let model: Model<TestDocument>
-    let module: TestingModule
+  let repository: BaseRepository<TestDocument>
+  let model: Model<TestDocument>
+  let module: TestingModule
 
-    beforeAll(async () => {
-        module = await Test.createTestingModule({
-            imports: [
-                createTestMongooseModule(),
-                MongooseModule.forFeature([{ name: TestModel, schema: TestSchema }]),
-            ],
-        }).compile()
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        createTestMongooseModule(),
+        MongooseModule.forFeature([{ name: TestModel, schema: TestSchema }]),
+      ],
+    }).compile()
 
-        model = module.get<Model<TestDocument>>(getModelToken(TestModel))
-        repository = new BaseRepository(model)
+    model = module.get<Model<TestDocument>>(getModelToken(TestModel))
+    repository = new BaseRepository(model)
+  })
+
+  afterAll(async () => {
+    await module.close()
+    await stopMongoMemoryServer()
+  })
+
+  afterEach(async () => {
+    await clearCollection(model)
+  })
+
+  describe('create', () => {
+    it('should create a new document', async () => {
+      const doc = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+
+      expect(doc).toBeDefined()
+      expect(doc.name).toBe('Test')
+      expect(doc.value).toBe(42)
+      expect(doc.isDeleted).toBe(false)
+      expect(doc.deletedAt).toBeNull()
+      expect(doc.createdAt).toBeDefined()
+      expect(doc.updatedAt).toBeDefined()
+    })
+  })
+
+  describe('findById', () => {
+    it('should find a document by ID', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      const found = await lastValueFrom(repository.findById(created._id))
+
+      expect(found).toBeDefined()
+      expect(found?._id.toString()).toBe(created._id.toString())
+      expect(found?.name).toBe('Test')
     })
 
-    afterAll(async () => {
-        await module.close()
-        await stopMongoMemoryServer()
+    it('should return null for non-existent ID', async () => {
+      const found = await lastValueFrom(
+        repository.findById('507f1f77bcf86cd799439011'),
+      )
+      expect(found).toBeNull()
     })
 
-    afterEach(async () => {
-        await clearCollection(model)
+    it('should not find soft-deleted document by default', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      await lastValueFrom(repository.softDelete(created._id))
+
+      const found = await lastValueFrom(repository.findById(created._id))
+      expect(found).toBeNull()
     })
 
-    describe('create', () => {
-        it('should create a new document', async () => {
-            const doc = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
+    it('should find soft-deleted document with withDeleted option', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      await lastValueFrom(repository.softDelete(created._id))
 
-            expect(doc).toBeDefined()
-            expect(doc.name).toBe('Test')
-            expect(doc.value).toBe(42)
-            expect(doc.isDeleted).toBe(false)
-            expect(doc.deletedAt).toBeNull()
-            expect(doc.createdAt).toBeDefined()
-            expect(doc.updatedAt).toBeDefined()
-        })
+      const found = await lastValueFrom(
+        repository.findById(created._id, {
+          withDeleted: true,
+        }),
+      )
+
+      expect(found).toBeDefined()
+      expect(found?.isDeleted).toBe(true)
+    })
+  })
+
+  describe('findOne', () => {
+    it('should find a document by filter', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
+
+      const found = await lastValueFrom(repository.findOne({ name: 'Test2' }))
+
+      expect(found).toBeDefined()
+      expect(found?.name).toBe('Test2')
+      expect(found?.value).toBe(2)
     })
 
-    describe('findById', () => {
-        it('should find a document by ID', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            const found = await lastValueFrom(repository.findById(created._id))
+    it('should not find soft-deleted documents by default', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      await lastValueFrom(repository.softDelete(created._id))
 
-            expect(found).toBeDefined()
-            expect(found?._id.toString()).toBe(created._id.toString())
-            expect(found?.name).toBe('Test')
-        })
+      const found = await lastValueFrom(repository.findOne({ name: 'Test' }))
+      expect(found).toBeNull()
+    })
+  })
 
-        it('should return null for non-existent ID', async () => {
-            const found = await lastValueFrom(
-                repository.findById('507f1f77bcf86cd799439011'),
-            )
-            expect(found).toBeNull()
-        })
+  describe('findAll', () => {
+    it('should find all documents', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
+      await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
 
-        it('should not find soft-deleted document by default', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            await lastValueFrom(repository.softDelete(created._id))
+      const all = await lastValueFrom(repository.findAll())
 
-            const found = await lastValueFrom(repository.findById(created._id))
-            expect(found).toBeNull()
-        })
-
-        it('should find soft-deleted document with withDeleted option', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            await lastValueFrom(repository.softDelete(created._id))
-
-            const found = await lastValueFrom(
-                repository.findById(created._id, {
-                    withDeleted: true,
-                }),
-            )
-
-            expect(found).toBeDefined()
-            expect(found?.isDeleted).toBe(true)
-        })
+      expect(all).toHaveLength(3)
     })
 
-    describe('findOne', () => {
-        it('should find a document by filter', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
+    it('should find documents by filter', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
+      await lastValueFrom(repository.create({ name: 'Test1', value: 3 }))
 
-            const found = await lastValueFrom(repository.findOne({ name: 'Test2' }))
+      const filtered = await lastValueFrom(
+        repository.findAll({ name: 'Test1' }),
+      )
 
-            expect(found).toBeDefined()
-            expect(found?.name).toBe('Test2')
-            expect(found?.value).toBe(2)
-        })
-
-        it('should not find soft-deleted documents by default', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            await lastValueFrom(repository.softDelete(created._id))
-
-            const found = await lastValueFrom(repository.findOne({ name: 'Test' }))
-            expect(found).toBeNull()
-        })
+      expect(filtered).toHaveLength(2)
     })
 
-    describe('findAll', () => {
-        it('should find all documents', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
-            await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
+    it('should exclude soft-deleted documents by default', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      const toDelete = await lastValueFrom(
+        repository.create({ name: 'Test2', value: 2 }),
+      )
+      await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
 
-            const all = await lastValueFrom(repository.findAll())
+      await lastValueFrom(repository.softDelete(toDelete._id))
 
-            expect(all).toHaveLength(3)
-        })
-
-        it('should find documents by filter', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
-            await lastValueFrom(repository.create({ name: 'Test1', value: 3 }))
-
-            const filtered = await lastValueFrom(
-                repository.findAll({ name: 'Test1' }),
-            )
-
-            expect(filtered).toHaveLength(2)
-        })
-
-        it('should exclude soft-deleted documents by default', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            const toDelete = await lastValueFrom(
-                repository.create({ name: 'Test2', value: 2 }),
-            )
-            await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
-
-            await lastValueFrom(repository.softDelete(toDelete._id))
-
-            const all = await lastValueFrom(repository.findAll())
-            expect(all).toHaveLength(2)
-        })
-
-        it('should include soft-deleted documents with withDeleted option', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            const toDelete = await lastValueFrom(
-                repository.create({ name: 'Test2', value: 2 }),
-            )
-            await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
-
-            await lastValueFrom(repository.softDelete(toDelete._id))
-
-            const all = await lastValueFrom(
-                repository.findAll({}, { withDeleted: true }),
-            )
-            expect(all).toHaveLength(3)
-        })
+      const all = await lastValueFrom(repository.findAll())
+      expect(all).toHaveLength(2)
     })
 
-    describe('update', () => {
-        it('should update a document', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
+    it('should include soft-deleted documents with withDeleted option', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      const toDelete = await lastValueFrom(
+        repository.create({ name: 'Test2', value: 2 }),
+      )
+      await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
 
-            const updated = await lastValueFrom(
-                repository.update(created._id, { value: 99 }),
-            )
+      await lastValueFrom(repository.softDelete(toDelete._id))
 
-            expect(updated).toBeDefined()
-            expect(updated?._id.toString()).toBe(created._id.toString())
-            expect(updated?.value).toBe(99)
-            expect(updated?.name).toBe('Test')
-        })
+      const all = await lastValueFrom(
+        repository.findAll({}, { withDeleted: true }),
+      )
+      expect(all).toHaveLength(3)
+    })
+  })
 
-        it('should not update soft-deleted documents by default', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            await lastValueFrom(repository.softDelete(created._id))
+  describe('update', () => {
+    it('should update a document', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
 
-            const updated = await lastValueFrom(
-                repository.update(created._id, { value: 99 }),
-            )
+      const updated = await lastValueFrom(
+        repository.update(created._id, { value: 99 }),
+      )
 
-            expect(updated).toBeNull()
-        })
-
-        it('should update updatedAt timestamp', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            const originalUpdatedAt = created.updatedAt
-
-            // Wait a bit to ensure different timestamp
-            await new Promise((resolve) => setTimeout(resolve, 10))
-
-            const updated = await lastValueFrom(
-                repository.update(created._id, { value: 99 }),
-            )
-
-            expect(updated?.updatedAt.getTime()).toBeGreaterThan(
-                originalUpdatedAt.getTime(),
-            )
-        })
+      expect(updated).toBeDefined()
+      expect(updated?._id.toString()).toBe(created._id.toString())
+      expect(updated?.value).toBe(99)
+      expect(updated?.name).toBe('Test')
     })
 
-    describe('softDelete', () => {
-        it('should soft delete a document', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
+    it('should not update soft-deleted documents by default', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      await lastValueFrom(repository.softDelete(created._id))
 
-            const deleted = await lastValueFrom(repository.softDelete(created._id))
+      const updated = await lastValueFrom(
+        repository.update(created._id, { value: 99 }),
+      )
 
-            expect(deleted).toBeDefined()
-            expect(deleted?.isDeleted).toBe(true)
-            expect(deleted?.deletedAt).toBeDefined()
-            expect(deleted?.deletedAt).toBeInstanceOf(Date)
-
-            // Should not find in normal query
-            const found = await lastValueFrom(repository.findById(created._id))
-            expect(found).toBeNull()
-        })
-
-        it('should return null for non-existent document', async () => {
-            const deleted = await lastValueFrom(
-                repository.softDelete('507f1f77bcf86cd799439011'),
-            )
-            expect(deleted).toBeNull()
-        })
+      expect(updated).toBeNull()
     })
 
-    describe('restore', () => {
-        it('should restore a soft-deleted document', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            await lastValueFrom(repository.softDelete(created._id))
+    it('should update updatedAt timestamp', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      const originalUpdatedAt = created.updatedAt
 
-            const restored = await lastValueFrom(repository.restore(created._id))
+      // Wait a bit to ensure different timestamp
+      await new Promise((resolve) => setTimeout(resolve, 10))
 
-            expect(restored).toBeDefined()
-            expect(restored?.isDeleted).toBe(false)
-            expect(restored?.deletedAt).toBeNull()
+      const updated = await lastValueFrom(
+        repository.update(created._id, { value: 99 }),
+      )
 
-            // Should find in normal query
-            const found = await lastValueFrom(repository.findById(created._id))
-            expect(found).toBeDefined()
-        })
+      expect(updated?.updatedAt.getTime()).toBeGreaterThan(
+        originalUpdatedAt.getTime(),
+      )
+    })
+  })
 
-        it('should return null for non-existent document', async () => {
-            const restored = await lastValueFrom(
-                repository.restore('507f1f77bcf86cd799439011'),
-            )
-            expect(restored).toBeNull()
-        })
+  describe('softDelete', () => {
+    it('should soft delete a document', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+
+      const deleted = await lastValueFrom(repository.softDelete(created._id))
+
+      expect(deleted).toBeDefined()
+      expect(deleted?.isDeleted).toBe(true)
+      expect(deleted?.deletedAt).toBeDefined()
+      expect(deleted?.deletedAt).toBeInstanceOf(Date)
+
+      // Should not find in normal query
+      const found = await lastValueFrom(repository.findById(created._id))
+      expect(found).toBeNull()
     })
 
-    describe('hardDelete', () => {
-        it('should permanently delete a document', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
+    it('should return null for non-existent document', async () => {
+      const deleted = await lastValueFrom(
+        repository.softDelete('507f1f77bcf86cd799439011'),
+      )
+      expect(deleted).toBeNull()
+    })
+  })
 
-            const deleted = await lastValueFrom(repository.hardDelete(created._id))
+  describe('restore', () => {
+    it('should restore a soft-deleted document', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      await lastValueFrom(repository.softDelete(created._id))
 
-            expect(deleted).toBeDefined()
+      const restored = await lastValueFrom(repository.restore(created._id))
 
-            // Should not find even with withDeleted option
-            const found = await lastValueFrom(
-                repository.findById(created._id, {
-                    withDeleted: true,
-                }),
-            )
-            expect(found).toBeNull()
-        })
+      expect(restored).toBeDefined()
+      expect(restored?.isDeleted).toBe(false)
+      expect(restored?.deletedAt).toBeNull()
+
+      // Should find in normal query
+      const found = await lastValueFrom(repository.findById(created._id))
+      expect(found).toBeDefined()
     })
 
-    describe('count', () => {
-        it('should count all documents', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
-            await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
+    it('should return null for non-existent document', async () => {
+      const restored = await lastValueFrom(
+        repository.restore('507f1f77bcf86cd799439011'),
+      )
+      expect(restored).toBeNull()
+    })
+  })
 
-            const count = await lastValueFrom(repository.count())
-            expect(count).toBe(3)
-        })
+  describe('hardDelete', () => {
+    it('should permanently delete a document', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
 
-        it('should count documents by filter', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
-            await lastValueFrom(repository.create({ name: 'Test1', value: 3 }))
+      const deleted = await lastValueFrom(repository.hardDelete(created._id))
 
-            const count = await lastValueFrom(repository.count({ name: 'Test1' }))
-            expect(count).toBe(2)
-        })
+      expect(deleted).toBeDefined()
 
-        it('should exclude soft-deleted documents by default', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            const toDelete = await lastValueFrom(
-                repository.create({ name: 'Test2', value: 2 }),
-            )
-            await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
+      // Should not find even with withDeleted option
+      const found = await lastValueFrom(
+        repository.findById(created._id, {
+          withDeleted: true,
+        }),
+      )
+      expect(found).toBeNull()
+    })
+  })
 
-            await lastValueFrom(repository.softDelete(toDelete._id))
+  describe('count', () => {
+    it('should count all documents', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
+      await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
 
-            const count = await lastValueFrom(repository.count())
-            expect(count).toBe(2)
-        })
-
-        it('should include soft-deleted documents with withDeleted option', async () => {
-            await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
-            const toDelete = await lastValueFrom(
-                repository.create({ name: 'Test2', value: 2 }),
-            )
-            await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
-
-            await lastValueFrom(repository.softDelete(toDelete._id))
-
-            const count = await lastValueFrom(
-                repository.count({}, { withDeleted: true }),
-            )
-            expect(count).toBe(3)
-        })
+      const count = await lastValueFrom(repository.count())
+      expect(count).toBe(3)
     })
 
-    describe('exists', () => {
-        it('should return true when document exists', async () => {
-            await lastValueFrom(repository.create({ name: 'Test', value: 42 }))
+    it('should count documents by filter', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
+      await lastValueFrom(repository.create({ name: 'Test1', value: 3 }))
 
-            const exists = await lastValueFrom(repository.exists({ name: 'Test' }))
-            expect(exists).toBe(true)
-        })
-
-        it('should return false when document does not exist', async () => {
-            const exists = await lastValueFrom(
-                repository.exists({ name: 'NonExistent' }),
-            )
-            expect(exists).toBe(false)
-        })
-
-        it('should return false for soft-deleted documents by default', async () => {
-            const created = await lastValueFrom(
-                repository.create({ name: 'Test', value: 42 }),
-            )
-            await lastValueFrom(repository.softDelete(created._id))
-
-            const exists = await lastValueFrom(repository.exists({ name: 'Test' }))
-            expect(exists).toBe(false)
-        })
+      const count = await lastValueFrom(repository.count({ name: 'Test1' }))
+      expect(count).toBe(2)
     })
+
+    it('should exclude soft-deleted documents by default', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      const toDelete = await lastValueFrom(
+        repository.create({ name: 'Test2', value: 2 }),
+      )
+      await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
+
+      await lastValueFrom(repository.softDelete(toDelete._id))
+
+      const count = await lastValueFrom(repository.count())
+      expect(count).toBe(2)
+    })
+
+    it('should include soft-deleted documents with withDeleted option', async () => {
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      const toDelete = await lastValueFrom(
+        repository.create({ name: 'Test2', value: 2 }),
+      )
+      await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
+
+      await lastValueFrom(repository.softDelete(toDelete._id))
+
+      const count = await lastValueFrom(
+        repository.count({}, { withDeleted: true }),
+      )
+      expect(count).toBe(3)
+    })
+  })
+
+  describe('exists', () => {
+    it('should return true when document exists', async () => {
+      await lastValueFrom(repository.create({ name: 'Test', value: 42 }))
+
+      const exists = await lastValueFrom(repository.exists({ name: 'Test' }))
+      expect(exists).toBe(true)
+    })
+
+    it('should return false when document does not exist', async () => {
+      const exists = await lastValueFrom(
+        repository.exists({ name: 'NonExistent' }),
+      )
+      expect(exists).toBe(false)
+    })
+
+    it('should return false for soft-deleted documents by default', async () => {
+      const created = await lastValueFrom(
+        repository.create({ name: 'Test', value: 42 }),
+      )
+      await lastValueFrom(repository.softDelete(created._id))
+
+      const exists = await lastValueFrom(repository.exists({ name: 'Test' }))
+      expect(exists).toBe(false)
+    })
+  })
 })

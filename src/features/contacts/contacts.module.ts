@@ -13,11 +13,11 @@ import { ContactsController } from './controllers/contacts.controller'
  * Contacts feature module
  */
 @Module({
-    imports: [
-        MongooseModule.forFeature([{ name: Contact, schema: ContactSchema }]),
-    ],
-    controllers: [ContactsController],
-    providers: [ContactRepository, ContactService],
-    exports: [ContactService, ContactRepository],
+  imports: [
+    MongooseModule.forFeature([{ name: Contact, schema: ContactSchema }]),
+  ],
+  controllers: [ContactsController],
+  providers: [ContactRepository, ContactService],
+  exports: [ContactService, ContactRepository],
 })
-export class ContactsModule { }
+export class ContactsModule {}

@@ -7,62 +7,62 @@ import { timestampPlugin } from '../../../core/mongo/plugins/timestamp.plugin'
  * Mongoose schema for Contact documents
  */
 export const ContactSchema = new Schema<ContactDocument>(
-    {
-        documentType: {
-            type: String,
-            enum: Object.values(DocumentType),
-            required: true,
-            index: true,
-        },
-        documentNumber: {
-            type: String,
-            required: true,
-            trim: true,
-            index: true,
-        },
-        legalName: {
-            type: String,
-            trim: true,
-            default: undefined,
-        },
-        firstName: {
-            type: String,
-            trim: true,
-            default: undefined,
-        },
-        lastName: {
-            type: String,
-            trim: true,
-            default: undefined,
-        },
-        email: {
-            type: String,
-            required: true,
-            trim: true,
-            lowercase: true,
-        },
-        phone: {
-            type: String,
-            trim: true,
-        },
-        address: {
-            type: String,
-            trim: true,
-        },
-        addressExtra: {
-            type: String,
-            trim: true,
-        },
-        cityCode: {
-            type: String,
-            trim: true,
-        },
+  {
+    documentType: {
+      type: String,
+      enum: Object.values(DocumentType),
+      required: true,
+      index: true,
     },
-    {
-        collection: 'contacts',
-        // Disable built-in timestamps as we use our custom plugin
-        timestamps: false,
+    documentNumber: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
     },
+    legalName: {
+      type: String,
+      trim: true,
+      default: undefined,
+    },
+    firstName: {
+      type: String,
+      trim: true,
+      default: undefined,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      default: undefined,
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    address: {
+      type: String,
+      trim: true,
+    },
+    addressExtra: {
+      type: String,
+      trim: true,
+    },
+    cityCode: {
+      type: String,
+      trim: true,
+    },
+  },
+  {
+    collection: 'contacts',
+    // Disable built-in timestamps as we use our custom plugin
+    timestamps: false,
+  },
 )
 
 // Apply plugins
@@ -72,36 +72,36 @@ ContactSchema.plugin(timestampPlugin)
 // Create compound unique index on documentType and documentNumber
 // This ensures no duplicate documents with same type and number
 ContactSchema.index(
-    { documentType: 1, documentNumber: 1 },
-    {
-        unique: true,
-        name: 'unique_document',
-    },
+  { documentType: 1, documentNumber: 1 },
+  {
+    unique: true,
+    name: 'unique_document',
+  },
 )
 
 // Validation for name combination
 ContactSchema.pre('save', function (next) {
-    const hasLegalName = !!this.legalName
-    const hasFirstName = !!this.firstName
-    const hasLastName = !!this.lastName
+  const hasLegalName = !!this.legalName
+  const hasFirstName = !!this.firstName
+  const hasLastName = !!this.lastName
 
-    // Check: Cannot have both legalName and personal names
-    if (hasLegalName && (hasFirstName || hasLastName)) {
-        return next(
-            new Error(
-                'Cannot have both legalName and personal names (firstName/lastName)',
-            ),
-        )
-    }
+  // Check: Cannot have both legalName and personal names
+  if (hasLegalName && (hasFirstName || hasLastName)) {
+    return next(
+      new Error(
+        'Cannot have both legalName and personal names (firstName/lastName)',
+      ),
+    )
+  }
 
-    // Check: Must have either legalName OR both firstName and lastName
-    if (!hasLegalName && (!hasFirstName || !hasLastName)) {
-        return next(
-            new Error('Must provide either legalName OR both firstName and lastName'),
-        )
-    }
+  // Check: Must have either legalName OR both firstName and lastName
+  if (!hasLegalName && (!hasFirstName || !hasLastName)) {
+    return next(
+      new Error('Must provide either legalName OR both firstName and lastName'),
+    )
+  }
 
-    next()
+  next()
 })
 
 export const Contact = 'Contact'

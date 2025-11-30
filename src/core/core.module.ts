@@ -7,4 +7,4 @@ import { MongoModule } from './mongo/mongo.module'
   imports: [ConfigModule, MongoModule],
   exports: [ConfigModule, MongoModule],
 })
-export class CoreModule { }
+export class CoreModule {}

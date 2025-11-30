@@ -6,9 +6,9 @@ import { BaseDocument } from '../schemas/base.schema'
  * @param model - The Mongoose model
  */
 export async function clearCollection<T extends BaseDocument>(
-    model: Model<T>,
+  model: Model<T>,
 ): Promise<void> {
-    await model.deleteMany({}).setOptions({ withDeleted: true })
+  await model.deleteMany({}).setOptions({ withDeleted: true })
 }
 
 /**
@@ -17,9 +17,9 @@ export async function clearCollection<T extends BaseDocument>(
  * @returns Total count of documents
  */
 export async function countAllDocuments<T extends BaseDocument>(
-    model: Model<T>,
+  model: Model<T>,
 ): Promise<number> {
-    return model.countDocuments({}).setOptions({ withDeleted: true })
+  return model.countDocuments({}).setOptions({ withDeleted: true })
 }
 
 /**
@@ -27,4 +27,4 @@ export async function countAllDocuments<T extends BaseDocument>(
  * @param ms - Milliseconds to wait
  */
 export const wait = (ms: number): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, ms))
+  new Promise((resolve) => setTimeout(resolve, ms))
