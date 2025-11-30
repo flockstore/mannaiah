@@ -36,6 +36,9 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
    * @returns Observable emitting array of contacts
    */
   findByEmail(email: string): Observable<ContactDocument[]> {
+    if (!email) {
+      return from(Promise.resolve([]))
+    }
     return from(this.model.find({ email: email.toLowerCase() }).exec())
   }
 }
