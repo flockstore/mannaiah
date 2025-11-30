@@ -48,15 +48,27 @@ export class ContactService extends BaseService<ContactDocument> {
   }
 
   /**
+   * Sanitize phone number by removing spaces and + characters
+   * @param phone - Phone number to sanitize
+   * @returns Sanitized phone number
+   */
+  private sanitizePhone(phone: string): string {
+    return phone.replace(/[\s+]/g, '')
+  }
+
+  /**
    * Create a new contact with validation
    * @param createDto - Data to create contact
    * @returns Observable emitting the created contact
    */
   createContact(createDto: ContactCreate): Observable<ContactDocument> {
     return of(createDto).pipe(
-      tap((dto) =>
-        this.validateNames(dto.legalName, dto.firstName, dto.lastName),
-      ),
+      tap((dto) => {
+        this.validateNames(dto.legalName, dto.firstName, dto.lastName)
+        if (dto.phone) {
+          dto.phone = this.sanitizePhone(dto.phone)
+        }
+      }),
       switchMap((dto) => this.repository.create(dto)),
     )
   }
@@ -93,6 +105,10 @@ export class ContactService extends BaseService<ContactDocument> {
     id: string,
     updateDto: ContactUpdate,
   ): Observable<ContactDocument | null> {
+    if (updateDto.phone) {
+      updateDto.phone = this.sanitizePhone(updateDto.phone)
+    }
+
     // If names are being updated, we need to validate against existing data + updates
     if (
       updateDto.legalName !== undefined ||

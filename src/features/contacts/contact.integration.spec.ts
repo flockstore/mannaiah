@@ -68,6 +68,20 @@ describe('ContactService (Integration)', () => {
       expect(contact.isDeleted).toBe(false)
     })
 
+    it('should sanitize phone number on creation', async () => {
+      const dto: ContactCreate = {
+        legalName: 'Acme Corp',
+        documentType: DocumentType.NIT,
+        documentNumber: '12345678901',
+        email: 'contact@acme.com',
+        phone: '+1 234 567',
+      }
+
+      const contact = await lastValueFrom(service.createContact(dto))
+
+      expect(contact.phone).toBe('1234567')
+    })
+
     it('should create a contact with personal names', async () => {
       const dto: ContactCreate = {
         firstName: 'John',
@@ -181,6 +195,25 @@ describe('ContactService (Integration)', () => {
       expect(updated).toBeDefined()
       expect(updated?.email).toBe('new@acme.com')
       expect(updated?.legalName).toBe('Acme Corp')
+    })
+
+    it('should sanitize phone number on update', async () => {
+      const dto: ContactCreate = {
+        legalName: 'Acme Corp',
+        documentType: DocumentType.NIT,
+        documentNumber: '12345678901',
+        email: 'contact@acme.com',
+      }
+
+      const created = await lastValueFrom(service.createContact(dto))
+
+      const updated = await lastValueFrom(
+        service.updateContact(created._id.toString(), {
+          phone: '+1 234 567',
+        }),
+      )
+
+      expect(updated?.phone).toBe('1234567')
     })
 
     it('should validate names on update', async () => {

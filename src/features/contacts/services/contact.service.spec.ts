@@ -6,6 +6,8 @@ import {
   MissingNameError,
 } from '../errors/contact.errors'
 import { BadRequestException } from '@nestjs/common'
+import { of } from 'rxjs'
+import { DocumentType } from '../interfaces/contact.interface'
 
 const mockContactRepository = () => ({
   create: jest.fn(),
@@ -17,6 +19,7 @@ const mockContactRepository = () => ({
 
 describe('ContactService', () => {
   let service: ContactService
+  let repository: any
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -30,10 +33,48 @@ describe('ContactService', () => {
     }).compile()
 
     service = module.get<ContactService>(ContactService)
+    repository = module.get(ContactRepository)
   })
 
   it('should be defined', () => {
     expect(service).toBeDefined()
+  })
+
+  describe('createContact', () => {
+    it('should sanitize phone number by removing spaces and +', (done) => {
+      const createDto: any = {
+        phone: '+1 234 567',
+        legalName: 'Test Corp',
+        email: 'test@example.com',
+        documentType: DocumentType.NIT,
+        documentNumber: '123',
+      }
+
+      const expectedDto = { ...createDto, phone: '1234567' }
+      repository.create.mockReturnValue(of(expectedDto))
+
+      service.createContact(createDto).subscribe(() => {
+        expect(repository.create).toHaveBeenCalledWith(expectedDto)
+        done()
+      })
+    })
+  })
+
+  describe('updateContact', () => {
+    it('should sanitize phone number on update', (done) => {
+      const updateDto: any = {
+        phone: '+1 234 567',
+      }
+      const id = 'some-id'
+      const expectedDto = { ...updateDto, phone: '1234567' }
+
+      repository.update.mockReturnValue(of({}))
+
+      service.updateContact(id, updateDto).subscribe(() => {
+        expect(repository.update).toHaveBeenCalledWith(id, expectedDto)
+        done()
+      })
+    })
   })
 
   describe('validateNames', () => {
