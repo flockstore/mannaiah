@@ -13,7 +13,7 @@ The following scopes are required to access the endpoints:
 | `/contacts` | `POST` | `contacts:create` | Create a new contact |
 | `/contacts/:id` | `PATCH` | `contacts:update` | Update an existing contact |
 | `/contacts/:id` | `DELETE` | `contacts:delete` | Delete a contact |
-| `*` | `*` | `contacts:manage` | Full access to all contacts endpoints |
+| `*` | `*` | `[resource]:manage` | Full access to all endpoints for a specific resource (e.g. `contacts:manage` for contacts) |
 
 ## Configuration
 
