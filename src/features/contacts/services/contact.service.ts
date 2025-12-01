@@ -9,6 +9,7 @@ import {
   DocumentType,
 } from '../interfaces/contact.interface'
 import { ContactRepository } from '../repositories/contact.repository'
+import { PhoneUtil } from '../utils/phone.util'
 
 import {
   InvalidNameCombinationError,
@@ -48,15 +49,6 @@ export class ContactService extends BaseService<ContactDocument> {
   }
 
   /**
-   * Sanitize phone number by removing spaces and + characters
-   * @param phone - Phone number to sanitize
-   * @returns Sanitized phone number
-   */
-  private sanitizePhone(phone: string): string {
-    return phone.replace(/[\s+]/g, '')
-  }
-
-  /**
    * Create a new contact with validation
    * @param createDto - Data to create contact
    * @returns Observable emitting the created contact
@@ -66,7 +58,7 @@ export class ContactService extends BaseService<ContactDocument> {
       tap((dto) => {
         this.validateNames(dto.legalName, dto.firstName, dto.lastName)
         if (dto.phone) {
-          dto.phone = this.sanitizePhone(dto.phone)
+          dto.phone = PhoneUtil.sanitize(dto.phone)
         }
       }),
       switchMap((dto) => this.repository.create(dto)),
@@ -106,7 +98,7 @@ export class ContactService extends BaseService<ContactDocument> {
     updateDto: ContactUpdate,
   ): Observable<ContactDocument | null> {
     if (updateDto.phone) {
-      updateDto.phone = this.sanitizePhone(updateDto.phone)
+      updateDto.phone = PhoneUtil.sanitize(updateDto.phone)
     }
 
     // If names are being updated, we need to validate against existing data + updates
