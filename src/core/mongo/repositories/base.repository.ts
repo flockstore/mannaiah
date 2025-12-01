@@ -177,4 +177,42 @@ export class BaseRepository<T extends BaseDocument> {
         .then((result) => !!result),
     )
   }
+
+  /**
+   * Find documents with pagination
+   * @param filter - Query filter
+   * @param page - Page number (1-based)
+   * @param limit - Items per page
+   * @param options - Query options (e.g., withDeleted)
+   * @returns Observable emitting paginated results with metadata
+   */
+  findAllPaginated(
+    filter: FilterQuery<T> = {},
+    page: number = 1,
+    limit: number = 10,
+    options?: QueryOptions,
+  ): Observable<{ data: T[]; total: number; page: number; limit: number }> {
+    const skip = (page - 1) * limit
+
+    const countPromise = this.model
+      .countDocuments(filter)
+      .setOptions(options || {})
+      .exec()
+
+    const dataPromise = this.model
+      .find(filter)
+      .setOptions(options || {})
+      .skip(skip)
+      .limit(limit)
+      .exec()
+
+    return from(
+      Promise.all([dataPromise, countPromise]).then(([data, total]) => ({
+        data,
+        total,
+        page,
+        limit,
+      })),
+    )
+  }
 }

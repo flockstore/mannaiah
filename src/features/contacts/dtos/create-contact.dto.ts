@@ -21,13 +21,13 @@ export class ContactCreate {
     description: 'Type of identification document',
   })
   @IsEnum(DocumentType)
-  @IsNotEmpty()
-  documentType: DocumentType
+  @IsOptional()
+  documentType?: DocumentType
 
   @ApiProperty({ description: 'Document number' })
   @IsString()
-  @IsNotEmpty()
-  documentNumber: string
+  @IsOptional()
+  documentNumber?: string
 
   @ApiPropertyOptional({
     description: 'Legal name (required if no first/last name)',

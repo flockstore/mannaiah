@@ -424,4 +424,87 @@ describe('BaseRepository', () => {
       expect(exists).toBe(false)
     })
   })
+
+  describe('findAllPaginated', () => {
+    beforeEach(async () => {
+      // Create test documents
+      await lastValueFrom(repository.create({ name: 'Test1', value: 1 }))
+      await lastValueFrom(repository.create({ name: 'Test2', value: 2 }))
+      await lastValueFrom(repository.create({ name: 'Test3', value: 3 }))
+      await lastValueFrom(repository.create({ name: 'Test4', value: 4 }))
+      await lastValueFrom(repository.create({ name: 'Test5', value: 5 }))
+    })
+
+    it('should return paginated results with correct metadata', async () => {
+      const result = await lastValueFrom(repository.findAllPaginated({}, 1, 2))
+
+      expect(result.data).toHaveLength(2)
+      expect(result.total).toBe(5)
+      expect(result.page).toBe(1)
+      expect(result.limit).toBe(2)
+    })
+
+    it('should return correct page of results', async () => {
+      const page1 = await lastValueFrom(repository.findAllPaginated({}, 1, 2))
+      const page2 = await lastValueFrom(repository.findAllPaginated({}, 2, 2))
+
+      expect(page1.data).toHaveLength(2)
+      expect(page2.data).toHaveLength(2)
+      expect(page1.total).toBe(5)
+      expect(page2.total).toBe(5)
+      // Ensure different documents on different pages
+      expect(page1.data[0]._id.toString()).not.toBe(page2.data[0]._id.toString())
+    })
+
+    it('should respect filter query', async () => {
+      const result = await lastValueFrom(
+        repository.findAllPaginated({ name: 'Test1' }, 1, 10)
+      )
+
+      expect(result.data).toHaveLength(1)
+      expect(result.total).toBe(1)
+      expect(result.data[0].name).toBe('Test1')
+    })
+
+    it('should exclude soft-deleted documents by default', async () => {
+      const docs = await lastValueFrom(repository.findAll())
+      await lastValueFrom(repository.softDelete(docs[0]._id))
+
+      const result = await lastValueFrom(repository.findAllPaginated({}, 1, 10))
+
+      expect(result.data).toHaveLength(4)
+      expect(result.total).toBe(4)
+    })
+
+    it('should include soft-deleted documents when withDeleted option is true', async () => {
+      const docs = await lastValueFrom(repository.findAll())
+      await lastValueFrom(repository.softDelete(docs[0]._id))
+
+      const result = await lastValueFrom(
+        repository.findAllPaginated({}, 1, 10, { withDeleted: true })
+      )
+
+      expect(result.data).toHaveLength(5)
+      expect(result.total).toBe(5)
+    })
+
+    it('should use default page and limit values', async () => {
+      const result = await lastValueFrom(repository.findAllPaginated())
+
+      expect(result.page).toBe(1)
+      expect(result.limit).toBe(10)
+      expect(result.data).toHaveLength(5) // All 5 test documents
+    })
+
+    it('should handle empty result set', async () => {
+      await clearCollection(model)
+
+      const result = await lastValueFrom(repository.findAllPaginated({}, 1, 10))
+
+      expect(result.data).toHaveLength(0)
+      expect(result.total).toBe(0)
+      expect(result.page).toBe(1)
+      expect(result.limit).toBe(10)
+    })
+  })
 })

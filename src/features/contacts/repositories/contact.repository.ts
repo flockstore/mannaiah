@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
-import { Observable, from } from 'rxjs'
+import { Model, FilterQuery } from 'mongoose'
+import { Observable } from 'rxjs'
 import { BaseRepository } from '../../../core/mongo/repositories/base.repository'
-import { ContactDocument, DocumentType } from '../interfaces/contact.interface'
+import { ContactDocument } from '../interfaces/contact.interface'
+import { QueryOptions } from '../../../core/mongo/schemas/base.schema'
 
 /**
  * Repository for Contact documents.
@@ -18,27 +19,26 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
   }
 
   /**
-   * Find a contact by document type and number
-   * @param documentType - Type of document (CC, CE, etc.)
-   * @param documentNumber - Document number
-   * @returns Observable emitting the contact or null
+   * Override findAllPaginated to add contact-specific query preprocessing
+   * (e.g., email normalization)
+   * @param filter - Query filter
+   * @param page - Page number (1-based)
+   * @param limit - Items per page
+   * @param options - Query options
+   * @returns Observable emitting paginated results
    */
-  findByDocument(
-    documentType: DocumentType,
-    documentNumber: string,
-  ): Observable<ContactDocument | null> {
-    return from(this.model.findOne({ documentType, documentNumber }).exec())
-  }
-
-  /**
-   * Find contacts by email
-   * @param email - Email address
-   * @returns Observable emitting array of contacts
-   */
-  findByEmail(email: string): Observable<ContactDocument[]> {
-    if (!email) {
-      return from(Promise.resolve([]))
+  findAllPaginated(
+    filter: FilterQuery<ContactDocument> = {},
+    page: number = 1,
+    limit: number = 10,
+    options?: QueryOptions,
+  ): Observable<{ data: ContactDocument[]; total: number; page: number; limit: number }> {
+    // Normalize email to lowercase for case-insensitive search
+    if (filter.email) {
+      filter.email = (filter.email as string).toLowerCase()
     }
-    return from(this.model.find({ email: email.toLowerCase() }).exec())
+
+    // Call parent implementation with preprocessed filter
+    return super.findAllPaginated(filter, page, limit, options)
   }
 }

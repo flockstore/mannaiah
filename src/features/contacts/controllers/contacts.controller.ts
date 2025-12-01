@@ -48,43 +48,20 @@ export class ContactsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get contacts by email' })
-  @ApiQuery({ name: 'email', required: true, type: String })
-  @ApiResponse({ status: 200, description: 'Return all contacts.' })
+  @ApiOperation({ summary: 'Get contacts with pagination and filtering' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10)' })
+  @ApiQuery({ name: 'email', required: false, type: String, description: 'Filter by email' })
+  @ApiResponse({ status: 200, description: 'Return paginated contacts.' })
   @RequirePermissions('contacts:read')
-  findAll(@Query('email') email: string): Observable<ContactDocument[]> {
-    return this.contactService.findByEmail(email)
-  }
-
-  @Get('document/:documentType/:documentNumber')
-  @ApiOperation({ summary: 'Get a contact by document type and number' })
-  @ApiParam({
-    name: 'documentType',
-    description: 'Type of document (CC, CE, TI, PAS, NIT, OTHER)',
-    enumName: 'DocumentType',
-    enum: ['CC', 'CE', 'TI', 'PAS', 'NIT', 'OTHER'],
-  })
-  @ApiParam({
-    name: 'documentNumber',
-    description: 'Document number',
-  })
-  @ApiResponse({ status: 200, description: 'Return the contact.' })
-  @ApiResponse({ status: 404, description: 'Contact not found.' })
-  @RequirePermissions('contacts:read')
-  findByDocument(
-    @Param('documentType') documentType: DocumentType,
-    @Param('documentNumber') documentNumber: string,
-  ): Observable<ContactDocument | null> {
-    return this.contactService.findByDocument(documentType, documentNumber).pipe(
-      map((contact) => {
-        if (!contact) {
-          throw new NotFoundException(
-            `Contact with document ${documentType} ${documentNumber} not found`,
-          )
-        }
-        return contact
-      }),
-    )
+  findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query() query: any,
+  ): Observable<{ data: ContactDocument[]; total: number; page: number; limit: number }> {
+    // Remove page and limit from query object as they are handled separately
+    const { page: _, limit: __, ...filters } = query
+    return this.contactService.findAllPaginated(filters, page, limit)
   }
 
   @Get(':id')

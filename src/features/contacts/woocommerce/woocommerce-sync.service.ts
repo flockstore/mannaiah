@@ -43,78 +43,83 @@ export class WooCommerceSyncService {
             return of(undefined)
         }
 
-        // Check if contact already exists
-        return this.contactService
-            .findByDocument(contactData.documentType, contactData.documentNumber)
-            .pipe(
-                switchMap((existingContact) => {
-                    if (existingContact) {
-                        // Contact exists, check if update is needed
-                        if (WooCommerceMappingUtil.hasContactChanged(existingContact, contactData)) {
-                            const updateData: ContactUpdate = {
-                                firstName: contactData.firstName,
-                                lastName: contactData.lastName,
-                                email: contactData.email,
-                                phone: contactData.phone,
-                                address: contactData.address,
-                                addressExtra: contactData.addressExtra,
-                                cityCode: contactData.cityCode,
-                            }
+        // Helper to handle update or create
+        const handleContact = (existingContact: any | null): Observable<void> => {
+            if (existingContact) {
+                // Contact exists, check if update is needed
+                if (WooCommerceMappingUtil.hasContactChanged(existingContact, contactData)) {
+                    const updateData: ContactUpdate = {
+                        firstName: contactData.firstName,
+                        lastName: contactData.lastName,
+                        email: contactData.email,
+                        phone: contactData.phone,
+                        address: contactData.address,
+                        addressExtra: contactData.addressExtra,
+                        cityCode: contactData.cityCode,
+                        // Update document info if it was missing and now provided
+                        documentType: contactData.documentType,
+                        documentNumber: contactData.documentNumber,
+                    }
 
-                            return this.contactService
-                                .updateContact(existingContact._id.toString(), updateData)
-                                .pipe(
-                                    map(() => {
-                                        stats.updated++
-                                    }),
-                                    catchError((error) => {
-                                        stats.errors++
-                                        stats.errorDetails.push(
-                                            `Order ${order.id}: Update failed - ${error.message}`,
-                                        )
-                                        this.logger.error(
-                                            `Failed to update contact for order ${order.id}`,
-                                            error.message,
-                                        )
-                                        return of(undefined)
-                                    }),
-                                )
-                        } else {
-                            stats.unchanged++
-                            return of(undefined)
-                        }
-                    } else {
-                        // Contact doesn't exist, create new
-                        return this.contactService.createContact(contactData).pipe(
+                    return this.contactService
+                        .updateContact(existingContact._id.toString(), updateData)
+                        .pipe(
                             map(() => {
-                                stats.created++
+                                stats.updated++
                             }),
                             catchError((error) => {
                                 stats.errors++
                                 stats.errorDetails.push(
-                                    `Order ${order.id}: Creation failed - ${error.message}`,
+                                    `Order ${order.id}: Update failed - ${error.message}`,
                                 )
                                 this.logger.error(
-                                    `Failed to create contact for order ${order.id}`,
+                                    `Failed to update contact for order ${order.id}`,
                                     error.message,
                                 )
                                 return of(undefined)
                             }),
                         )
-                    }
-                }),
-                catchError((error) => {
-                    stats.errors++
-                    stats.errorDetails.push(
-                        `Order ${order.id}: Lookup failed - ${error.message}`,
-                    )
-                    this.logger.error(
-                        `Failed to process order ${order.id}`,
-                        error.message,
-                    )
+                } else {
+                    stats.unchanged++
                     return of(undefined)
-                }),
-            )
+                }
+            } else {
+                // Contact doesn't exist, create new
+                return this.contactService.createContact(contactData).pipe(
+                    map(() => {
+                        stats.created++
+                    }),
+                    catchError((error) => {
+                        stats.errors++
+                        stats.errorDetails.push(
+                            `Order ${order.id}: Creation failed - ${error.message}`,
+                        )
+                        this.logger.error(
+                            `Failed to create contact for order ${order.id}`,
+                            error.message,
+                        )
+                        return of(undefined)
+                    }),
+                )
+            }
+        }
+
+        // Use email lookup via findAllPaginated
+        return this.contactService.findAllPaginated({ email: contactData.email }, 1, 1).pipe(
+            map(result => result.data[0] || null),
+            switchMap(existingContact => handleContact(existingContact)),
+            catchError((error) => {
+                stats.errors++
+                stats.errorDetails.push(
+                    `Order ${order.id}: Lookup failed - ${error.message}`,
+                )
+                this.logger.error(
+                    `Failed to process order ${order.id}`,
+                    error.message,
+                )
+                return of(undefined)
+            }),
+        )
     }
 
     /**

@@ -309,51 +309,9 @@ describe('ContactService (Integration)', () => {
     })
   })
 
-  describe('findByDocument', () => {
-    it('should find contact by document', async () => {
-      const dto: ContactCreate = {
-        legalName: 'Acme Corp',
-        documentType: DocumentType.NIT,
-        documentNumber: '12345678901',
-        email: 'contact@acme.com',
-      }
+  // findByEmail was removed from service, functionality covered by findAllPaginated
+  // findByDocument was also removed, use findAllPaginated with query filters instead
 
-      await lastValueFrom(service.createContact(dto))
-
-      const found = await lastValueFrom(
-        service.findByDocument(DocumentType.NIT, '12345678901'),
-      )
-
-      expect(found).toBeDefined()
-      expect(found?.legalName).toBe('Acme Corp')
-    })
-  })
-
-  describe('findByEmail', () => {
-    it('should find contacts by email', async () => {
-      const dto1: ContactCreate = {
-        legalName: 'Acme Corp',
-        documentType: DocumentType.NIT,
-        documentNumber: '12345678901',
-        email: 'contact@acme.com',
-      }
-
-      const dto2: ContactCreate = {
-        firstName: 'John',
-        lastName: 'Doe',
-        documentType: DocumentType.CC,
-        documentNumber: '87654321',
-        email: 'contact@acme.com', // Same email
-      }
-
-      await lastValueFrom(service.createContact(dto1))
-      await lastValueFrom(service.createContact(dto2))
-
-      const found = await lastValueFrom(service.findByEmail('contact@acme.com'))
-
-      expect(found).toHaveLength(2)
-    })
-  })
 
   describe('timestamps', () => {
     it('should set createdAt and updatedAt on creation', async () => {

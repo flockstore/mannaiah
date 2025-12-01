@@ -74,46 +74,7 @@ describe('ContactCreate', () => {
   })
 
   describe('Invalid DTOs', () => {
-    it('should fail when documentType is missing', async () => {
-      const dto = plainToClass(ContactCreate, {
-        documentNumber: '123456789',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-      })
-
-      const errors = await validate(dto)
-      expect(errors.length).toBeGreaterThan(0)
-      expect(errors[0].property).toBe('documentType')
-    })
-
-    it('should fail when documentType is invalid', async () => {
-      const dto = plainToClass(ContactCreate, {
-        documentType: 'INVALID' as DocumentType,
-        documentNumber: '123456789',
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-      })
-
-      const errors = await validate(dto)
-      expect(errors.length).toBeGreaterThan(0)
-      const docTypeError = errors.find((e) => e.property === 'documentType')
-      expect(docTypeError).toBeDefined()
-    })
-
-    it('should fail when documentNumber is missing', async () => {
-      const dto = plainToClass(ContactCreate, {
-        documentType: DocumentType.CC,
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-      })
-
-      const errors = await validate(dto)
-      expect(errors.length).toBeGreaterThan(0)
-      expect(errors[0].property).toBe('documentNumber')
-    })
+    // Document fields are now optional, so no validation errors expected when missing
 
     it('should fail when email is missing', async () => {
       const dto = plainToClass(ContactCreate, {

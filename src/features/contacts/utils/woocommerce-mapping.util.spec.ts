@@ -58,10 +58,13 @@ describe('WooCommerceMappingUtil', () => {
             expect(contact).toBeNull()
         })
 
-        it('should return null if document number is missing', () => {
+        it('should create contact without document fields if document number is missing', () => {
             const order = { ...mockOrder, meta_data: [] }
             const contact = WooCommerceMappingUtil.mapOrderToContact(order)
-            expect(contact).toBeNull()
+            expect(contact).not.toBeNull()
+            expect(contact?.documentType).toBeUndefined()
+            expect(contact?.documentNumber).toBeUndefined()
+            expect(contact?.email).toBe('john@example.com')
         })
 
         it('should return null if names are missing', () => {

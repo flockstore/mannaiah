@@ -35,10 +35,10 @@ describe('ContactsController', () => {
 
   const mockContactService = {
     createContact: jest.fn(),
-    findByEmail: jest.fn(),
-    findById: jest.fn(),
-    findByDocument: jest.fn(),
+    findAllPaginated: jest.fn(),
+    findByDocument: jest.fn(), // Keep for service mock consistency if needed
     updateContact: jest.fn(),
+    findById: jest.fn(),
     softDelete: jest.fn(),
   }
 
@@ -114,76 +114,22 @@ describe('ContactsController', () => {
   })
 
   describe('findAll', () => {
-    it('should return contacts by email', (done) => {
-      const email = 'john.doe@example.com'
-      const contacts = [mockContactDocument]
+    it('should return paginated contacts', (done) => {
+      const mockResult = { data: [mockContactDocument], total: 1, page: 1, limit: 10 }
+      mockContactService.findAllPaginated.mockReturnValue(of(mockResult))
 
-      mockContactService.findByEmail.mockReturnValue(of(contacts))
-
-      controller.findAll(email).subscribe({
-        next: (result) => {
-          expect(result).toEqual(contacts)
-          expect(service.findByEmail).toHaveBeenCalledWith(email)
-          done()
-        },
-        error: done.fail,
-      })
-    })
-
-    it('should return empty array when no contacts found', (done) => {
-      const email = 'nonexistent@example.com'
-
-      mockContactService.findByEmail.mockReturnValue(of([]))
-
-      controller.findAll(email).subscribe({
-        next: (result) => {
-          expect(result).toEqual([])
-          expect(service.findByEmail).toHaveBeenCalledWith(email)
-          done()
-        },
-        error: done.fail,
+      controller.findAll(1, 10, { email: 'test@example.com' }).subscribe((result) => {
+        expect(result).toEqual(mockResult)
+        expect(mockContactService.findAllPaginated).toHaveBeenCalledWith(
+          { email: 'test@example.com' },
+          1,
+          10,
+        )
+        done()
       })
     })
   })
-
-  describe('findByDocument', () => {
-    it('should return a contact by document type and number', (done) => {
-      const documentType = DocumentType.CC
-      const documentNumber = '123456789'
-
-      mockContactService.findByDocument.mockReturnValue(of(mockContactDocument))
-
-      controller.findByDocument(documentType, documentNumber).subscribe({
-        next: (result) => {
-          expect(result).toEqual(mockContactDocument)
-          expect(service.findByDocument).toHaveBeenCalledWith(
-            documentType,
-            documentNumber,
-          )
-          done()
-        },
-        error: done.fail,
-      })
-    })
-
-    it('should throw NotFoundException when contact not found by document', (done) => {
-      const documentType = DocumentType.CC
-      const documentNumber = '999999999'
-
-      mockContactService.findByDocument.mockReturnValue(of(null))
-
-      controller.findByDocument(documentType, documentNumber).subscribe({
-        next: () => done.fail('Should have thrown NotFoundException'),
-        error: (err) => {
-          expect(err).toBeInstanceOf(NotFoundException)
-          expect(err.message).toBe(
-            `Contact with document ${documentType} ${documentNumber} not found`,
-          )
-          done()
-        },
-      })
-    })
-  })
+  // Removed findByDocument tests as the endpoint was removed
 
   describe('findOne', () => {
     it('should return a contact by id', (done) => {

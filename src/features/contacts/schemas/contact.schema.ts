@@ -11,12 +11,12 @@ export const ContactSchema = new Schema<ContactDocument>(
     documentType: {
       type: String,
       enum: Object.values(DocumentType),
-      required: true,
+      required: false,
       index: true,
     },
     documentNumber: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       index: true,
     },
@@ -40,6 +40,7 @@ export const ContactSchema = new Schema<ContactDocument>(
       required: true,
       trim: true,
       lowercase: true,
+      unique: true,
     },
     phone: {
       type: String,
@@ -70,12 +71,13 @@ ContactSchema.plugin(softDeletePlugin)
 ContactSchema.plugin(timestampPlugin)
 
 // Create compound unique index on documentType and documentNumber
-// This ensures no duplicate documents with same type and number
+// This ensures no duplicate documents with same type and number, but allows nulls (sparse)
 ContactSchema.index(
   { documentType: 1, documentNumber: 1 },
   {
     unique: true,
     name: 'unique_document',
+    sparse: true,
   },
 )
 

@@ -57,8 +57,8 @@ export interface ContactDocument extends BaseDocument {
  * DTO for creating a new contact
  */
 export interface ContactCreate {
-  documentType: DocumentType
-  documentNumber: string
+  documentType?: DocumentType
+  documentNumber?: string
   legalName?: string
   firstName?: string
   lastName?: string

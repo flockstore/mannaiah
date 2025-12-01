@@ -66,32 +66,10 @@ export class ContactService extends BaseService<ContactDocument> {
   }
 
   /**
-   * Find a contact by document type and number
-   * @param documentType - Type of document
-   * @param documentNumber - Document number
-   * @returns Observable emitting the contact or null
-   */
-  findByDocument(
-    documentType: DocumentType,
-    documentNumber: string,
-  ): Observable<ContactDocument | null> {
-    return this.repository.findByDocument(documentType, documentNumber)
-  }
-
-  /**
-   * Find contacts by email
-   * @param email - Email address
-   * @returns Observable emitting array of contacts
-   */
-  findByEmail(email: string): Observable<ContactDocument[]> {
-    return this.repository.findByEmail(email)
-  }
-
-  /**
    * Update a contact with validation
    * @param id - Contact ID
    * @param updateDto - Data to update
-   * @returns Observable emitting the updated contact or null
+   * @returns Observable emitting the updated document or null
    */
   updateContact(
     id: string,

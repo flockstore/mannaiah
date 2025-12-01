@@ -10,7 +10,7 @@ import { BaseRepository } from '../repositories/base.repository'
  * @template T - The document interface extending BaseDocument
  */
 export class BaseService<T extends BaseDocument> {
-  constructor(protected readonly repository: BaseRepository<T>) {}
+  constructor(protected readonly repository: BaseRepository<T>) { }
 
   /**
    * Create a new document
@@ -123,5 +123,22 @@ export class BaseService<T extends BaseDocument> {
    */
   exists(filter: FilterQuery<T>, options?: QueryOptions): Observable<boolean> {
     return this.repository.exists(filter, options)
+  }
+
+  /**
+   * Find documents with pagination
+   * @param filter - Query filter
+   * @param page - Page number (1-based)
+   * @param limit - Items per page
+   * @param options - Query options (e.g., withDeleted)
+   * @returns Observable emitting paginated results with metadata
+   */
+  findAllPaginated(
+    filter: FilterQuery<T> = {},
+    page: number = 1,
+    limit: number = 10,
+    options?: QueryOptions,
+  ): Observable<{ data: T[]; total: number; page: number; limit: number }> {
+    return this.repository.findAllPaginated(filter, page, limit, options)
   }
 }

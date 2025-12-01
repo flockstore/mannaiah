@@ -13,6 +13,7 @@ const mockContactRepository = () => ({
   create: jest.fn(),
   findByDocument: jest.fn(),
   findByEmail: jest.fn(),
+  findAllPaginated: jest.fn(), // Added this line
   update: jest.fn(),
   findById: jest.fn(),
 })
@@ -56,6 +57,23 @@ describe('ContactService', () => {
       service.createContact(createDto).subscribe(() => {
         expect(repository.create).toHaveBeenCalledWith(expectedDto)
         done()
+      })
+    })
+  })
+
+  describe('findAllPaginated', () => {
+    it('should find contacts with pagination', (done) => {
+      const mockResult = { data: [], total: 0, page: 1, limit: 10 }
+      repository.findAllPaginated.mockReturnValue(of(mockResult))
+
+      // ContactService now inherits findAllPaginated from BaseService
+      service.findAllPaginated({}, 1, 10).subscribe({
+        next: (result) => {
+          expect(result).toEqual(mockResult)
+          expect(repository.findAllPaginated).toHaveBeenCalledWith({}, 1, 10, undefined)
+          done()
+        },
+        error: done.fail,
       })
     })
   })

@@ -46,9 +46,9 @@ describe('WooCommerceSyncService', () => {
 
     beforeEach(async () => {
         const mockContactService = {
-            findByDocument: jest.fn(),
             createContact: jest.fn(),
             updateContact: jest.fn(),
+            findAllPaginated: jest.fn(),
         }
 
         const mockWooCommerceApi = {
@@ -74,8 +74,95 @@ describe('WooCommerceSyncService', () => {
         wooCommerceApi = module.get(WooCommerceApiService)
     })
 
+    afterEach(() => {
+        jest.clearAllMocks()
+    })
+
     it('should be defined', () => {
         expect(service).toBeDefined()
+    })
+
+    describe('processOrder (private)', () => {
+        // We test this via syncCustomers since it's private,
+        // or we could cast to any to test directly if needed.
+    })
+
+    describe('syncCustomers', () => {
+        it('should process orders and create new contacts', (done) => {
+            const orders = [mockOrder]
+            wooCommerceApi.getOrders.mockReturnValue(of(orders))
+            // Mock findAllPaginated to return empty list (not found by email)
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(of({ _id: 'new-id' } as any))
+
+            service.syncCustomers().subscribe({
+                next: (stats) => {
+                    expect(stats.created).toBe(1)
+                    expect(stats.updated).toBe(0)
+                    expect(stats.errors).toBe(0)
+                    expect(contactService.createContact).toHaveBeenCalled()
+                    done()
+                },
+            })
+        })
+
+        it('should update existing contacts if changed', (done) => {
+            const orders = [mockOrder]
+            const existingContact = {
+                ...mockContact,
+                _id: 'existing-id',
+                firstName: 'Old Name', // Different name
+            }
+
+            wooCommerceApi.getOrders.mockReturnValue(of(orders))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [existingContact as any], total: 1, page: 1, limit: 1 }))
+            contactService.updateContact.mockReturnValue(of({ ...existingContact, firstName: 'John' } as any))
+
+            service.syncCustomers().subscribe({
+                next: (stats) => {
+                    expect(stats.updated).toBe(1)
+                    expect(stats.created).toBe(0)
+                    expect(stats.errors).toBe(0)
+                    expect(contactService.updateContact).toHaveBeenCalled()
+                    done()
+                },
+            })
+        })
+
+        it('should not update if contact is unchanged', (done) => {
+            const orders = [mockOrder]
+            const existingContact = {
+                ...mockContact,
+                _id: 'existing-id',
+            }
+
+            wooCommerceApi.getOrders.mockReturnValue(of(orders))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [existingContact as any], total: 1, page: 1, limit: 1 }))
+
+            service.syncCustomers().subscribe({
+                next: (stats) => {
+                    expect(stats.unchanged).toBe(1)
+                    expect(stats.updated).toBe(0)
+                    expect(stats.created).toBe(0)
+                    expect(contactService.updateContact).not.toHaveBeenCalled()
+                    done()
+                },
+            })
+        })
+
+        it('should handle errors gracefully', (done) => {
+            const orders = [mockOrder]
+            wooCommerceApi.getOrders.mockReturnValue(of(orders))
+            contactService.findAllPaginated.mockReturnValue(throwError(() => new Error('DB Error')))
+
+            service.syncCustomers().subscribe({
+                next: (stats) => {
+                    expect(stats.errors).toBe(1)
+                    expect(stats.errorDetails[0]).toContain('Lookup failed')
+                    done()
+                },
+            })
+        })
     })
 
     describe('phone formatting', () => {
@@ -86,7 +173,7 @@ describe('WooCommerceSyncService', () => {
             }
 
             wooCommerceApi.getOrders.mockReturnValue(of([orderWithPhone]))
-            contactService.findByDocument.mockReturnValue(of(null))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
             contactService.createContact.mockReturnValue(of(mockContact as any))
 
             service.syncCustomers().subscribe(() => {
@@ -106,7 +193,7 @@ describe('WooCommerceSyncService', () => {
             }
 
             wooCommerceApi.getOrders.mockReturnValue(of([orderWithPlusPhone]))
-            contactService.findByDocument.mockReturnValue(of(null))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
             contactService.createContact.mockReturnValue(of(mockContact as any))
 
             service.syncCustomers().subscribe(() => {
@@ -123,7 +210,7 @@ describe('WooCommerceSyncService', () => {
     describe('data extraction and mapping', () => {
         it('should extract document number from metadata', (done) => {
             wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
-            contactService.findByDocument.mockReturnValue(of(null))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
             contactService.createContact.mockReturnValue(of(mockContact as any))
 
             service.syncCustomers().subscribe(() => {
@@ -138,7 +225,7 @@ describe('WooCommerceSyncService', () => {
 
         it('should map billing data correctly', (done) => {
             wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
-            contactService.findByDocument.mockReturnValue(of(null))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
             contactService.createContact.mockReturnValue(of(mockContact as any))
 
             service.syncCustomers().subscribe(() => {
@@ -192,7 +279,7 @@ describe('WooCommerceSyncService', () => {
     describe('contact creation', () => {
         it('should create new contact when not exists', (done) => {
             wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
-            contactService.findByDocument.mockReturnValue(of(null))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
             contactService.createContact.mockReturnValue(of(mockContact as any))
 
             service.syncCustomers().subscribe((stats) => {
@@ -205,7 +292,7 @@ describe('WooCommerceSyncService', () => {
 
         it('should handle creation errors gracefully', (done) => {
             wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
-            contactService.findByDocument.mockReturnValue(of(null))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
             contactService.createContact.mockReturnValue(
                 throwError(() => new Error('Database error')),
             )
@@ -223,11 +310,12 @@ describe('WooCommerceSyncService', () => {
         it('should update contact when data has changed', (done) => {
             const existingContact = {
                 ...mockContact,
+                _id: 'existing-id',
                 phone: '+573009999999', // Different phone
             }
 
             wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
-            contactService.findByDocument.mockReturnValue(of(existingContact as any))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [existingContact as any], total: 1, page: 1, limit: 1 }))
             contactService.updateContact.mockReturnValue(of(mockContact as any))
 
             service.syncCustomers().subscribe((stats) => {
@@ -240,7 +328,7 @@ describe('WooCommerceSyncService', () => {
 
         it('should not update contact when data is unchanged', (done) => {
             wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
-            contactService.findByDocument.mockReturnValue(of(mockContact as any))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [mockContact as any], total: 1, page: 1, limit: 1 }))
 
             service.syncCustomers().subscribe((stats) => {
                 expect(stats.unchanged).toBe(1)
@@ -253,11 +341,12 @@ describe('WooCommerceSyncService', () => {
         it('should handle update errors gracefully', (done) => {
             const existingContact = {
                 ...mockContact,
+                _id: 'existing-id',
                 phone: '+573009999999',
             }
 
             wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
-            contactService.findByDocument.mockReturnValue(of(existingContact as any))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [existingContact as any], total: 1, page: 1, limit: 1 }))
             contactService.updateContact.mockReturnValue(
                 throwError(() => new Error('Update failed')),
             )
@@ -279,7 +368,7 @@ describe('WooCommerceSyncService', () => {
             ]
 
             wooCommerceApi.getOrders.mockReturnValue(of(orders))
-            contactService.findByDocument.mockReturnValue(of(null))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
             contactService.createContact.mockReturnValue(of(mockContact as any))
 
             service.syncCustomers().subscribe((stats) => {

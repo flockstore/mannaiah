@@ -37,21 +37,14 @@ export class WooCommerceMappingUtil {
                 return null
             }
 
-            if (!documentNumber) {
-                this.logger.warn(
-                    `Order ${order.id} missing document number in metadata, skipping`,
-                )
-                return null
-            }
-
             if (!billing.first_name || !billing.last_name) {
                 this.logger.warn(`Order ${order.id} missing name fields, skipping`)
                 return null
             }
 
             const contact: ContactCreate = {
-                documentType: DocumentType.CC, // Default to CC, could be made configurable
-                documentNumber,
+                documentType: documentNumber ? DocumentType.CC : undefined, // Default to CC if number exists, else undefined
+                documentNumber: documentNumber || undefined,
                 firstName: billing.first_name,
                 lastName: billing.last_name,
                 email: billing.email.toLowerCase(),
