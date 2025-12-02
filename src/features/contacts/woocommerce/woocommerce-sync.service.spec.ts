@@ -244,18 +244,28 @@ describe('WooCommerceSyncService', () => {
             })
         })
 
-        it('should skip order missing document number', (done) => {
+        it('should create contact even without document number', (done) => {
             const orderWithoutDoc = {
                 ...mockOrder,
                 meta_data: [],
             }
 
             wooCommerceApi.getOrders.mockReturnValue(of([orderWithoutDoc]))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(of({ _id: 'new-id' } as any))
 
             service.syncCustomers().subscribe((stats) => {
-                expect(stats.errors).toBe(1)
-                expect(stats.created).toBe(0)
-                expect(contactService.createContact).not.toHaveBeenCalled()
+                expect(stats.created).toBe(1)
+                expect(stats.errors).toBe(0)
+                expect(contactService.createContact).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        email: 'john@example.com',
+                        firstName: 'John',
+                        lastName: 'Doe',
+                        documentType: undefined,
+                        documentNumber: undefined,
+                    }),
+                )
                 done()
             })
         })
@@ -399,6 +409,167 @@ describe('WooCommerceSyncService', () => {
             service.syncCustomers().subscribe((stats) => {
                 expect(stats.errors).toBe(1)
                 expect(stats.errorDetails.length).toBeGreaterThan(0)
+                done()
+            })
+        })
+    })
+
+    describe('duplicate key error handling', () => {
+        it('should handle E11000 duplicate key error and retry as update', (done) => {
+            const duplicateError = {
+                code: 11000,
+                message: 'E11000 duplicate key error collection: mannaiah.contacts index: email_1 dup key: { email: "john@example.com" }',
+            }
+
+            wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
+            // First lookup returns empty (no contact found)
+            contactService.findAllPaginated.mockReturnValueOnce(of({ data: [], total: 0, page: 1, limit: 1 }))
+            // Create fails with duplicate key error
+            contactService.createContact.mockReturnValue(throwError(() => duplicateError))
+            // Second lookup (retry) finds the contact that was created concurrently
+            contactService.findAllPaginated.mockReturnValueOnce(of({ data: [mockContact as any], total: 1, page: 1, limit: 1 }))
+
+            service.syncCustomers().subscribe((stats) => {
+                expect(stats.unchanged).toBe(1)
+                expect(stats.errors).toBe(0)
+                expect(stats.created).toBe(0)
+                expect(contactService.findAllPaginated).toHaveBeenCalledTimes(2)
+                done()
+            })
+        })
+
+        it('should update on duplicate key error if contact data changed', (done) => {
+            const duplicateError = {
+                code: 11000,
+                message: 'E11000 duplicate key error',
+            }
+            const existingContact = {
+                ...mockContact,
+                _id: 'existing-id',
+                phone: '+573009999999', // Different phone
+            }
+
+            wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
+            contactService.findAllPaginated.mockReturnValueOnce(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(throwError(() => duplicateError))
+            contactService.findAllPaginated.mockReturnValueOnce(of({ data: [existingContact as any], total: 1, page: 1, limit: 1 }))
+            contactService.updateContact.mockReturnValue(of(mockContact as any))
+
+            service.syncCustomers().subscribe((stats) => {
+                expect(stats.updated).toBe(1)
+                expect(stats.errors).toBe(0)
+                expect(contactService.updateContact).toHaveBeenCalled()
+                done()
+            })
+        })
+
+        it('should handle non-duplicate errors normally', (done) => {
+            const normalError = new Error('Some other database error')
+
+            wooCommerceApi.getOrders.mockReturnValue(of([mockOrder]))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(throwError(() => normalError))
+
+            service.syncCustomers().subscribe((stats) => {
+                expect(stats.errors).toBe(1)
+                expect(stats.created).toBe(0)
+                expect(stats.errorDetails[0]).toContain('Creation failed')
+                done()
+            })
+        })
+    })
+
+    describe('email deduplication', () => {
+        it('should deduplicate orders with same email', (done) => {
+            const order1 = { ...mockOrder, id: 1 }
+            const order2 = { ...mockOrder, id: 2, billing: { ...mockOrder.billing } }
+            const order3 = { ...mockOrder, id: 3, billing: { ...mockOrder.billing } }
+
+            wooCommerceApi.getOrders.mockReturnValue(of([order1, order2, order3]))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(of(mockContact as any))
+
+            service.syncCustomers().subscribe((stats) => {
+                expect(stats.total).toBe(3)
+                expect(stats.created).toBe(1) // Only one contact created for duplicate emails
+                expect(contactService.createContact).toHaveBeenCalledTimes(1)
+                done()
+            })
+        })
+
+        it('should process orders with different emails separately', (done) => {
+            const order1 = { ...mockOrder, id: 1, billing: { ...mockOrder.billing, email: 'john@example.com' } }
+            const order2 = { ...mockOrder, id: 2, billing: { ...mockOrder.billing, email: 'jane@example.com' }, meta_data: [{ id: 2, key: '_billing_document', value: '987654321' }] }
+
+            wooCommerceApi.getOrders.mockReturnValue(of([order1, order2]))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(of(mockContact as any))
+
+            service.syncCustomers().subscribe((stats) => {
+                expect(stats.total).toBe(2)
+                expect(stats.created).toBe(2)
+                expect(contactService.createContact).toHaveBeenCalledTimes(2)
+                done()
+            })
+        })
+
+        it('should handle case-insensitive email deduplication', (done) => {
+            const order1 = { ...mockOrder, id: 1, billing: { ...mockOrder.billing, email: 'John@Example.COM' } }
+            const order2 = { ...mockOrder, id: 2, billing: { ...mockOrder.billing, email: 'john@example.com' } }
+
+            wooCommerceApi.getOrders.mockReturnValue(of([order1, order2]))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(of(mockContact as any))
+
+            service.syncCustomers().subscribe((stats) => {
+                expect(stats.total).toBe(2)
+                expect(stats.created).toBe(1) // Should create only once
+                expect(contactService.createContact).toHaveBeenCalledTimes(1)
+                expect(contactService.createContact).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        email: 'john@example.com', // Should be normalized to lowercase
+                    }),
+                )
+                done()
+            })
+        })
+
+        it('should skip orders without email in deduplication', (done) => {
+            const order1 = { ...mockOrder, id: 1, billing: { ...mockOrder.billing, email: 'john@example.com' } }
+            const order2 = { ...mockOrder, id: 2, billing: { ...mockOrder.billing, email: '' } }
+            const order3 = { ...mockOrder, id: 3, billing: { ...mockOrder.billing, email: 'jane@example.com' }, meta_data: [{ id: 3, key: '_billing_document', value: '987654321' }] }
+
+            wooCommerceApi.getOrders.mockReturnValue(of([order1, order2, order3]))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(of(mockContact as any))
+
+            service.syncCustomers().subscribe((stats) => {
+                expect(stats.total).toBe(3)
+                expect(stats.created).toBe(2) // Two valid emails
+                expect(stats.errors).toBe(1) // One missing email
+                done()
+            })
+        })
+    })
+
+    describe('race condition prevention', () => {
+        it('should process multiple orders with same email without race condition', (done) => {
+            // Simulate multiple orders with same email arriving concurrently
+            const orders = [
+                { ...mockOrder, id: 1001 },
+                { ...mockOrder, id: 1002 },
+                { ...mockOrder, id: 1003 },
+            ]
+
+            wooCommerceApi.getOrders.mockReturnValue(of(orders))
+            contactService.findAllPaginated.mockReturnValue(of({ data: [], total: 0, page: 1, limit: 1 }))
+            contactService.createContact.mockReturnValue(of(mockContact as any))
+
+            service.syncCustomers().subscribe((stats) => {
+                // Should only create once due to deduplication
+                expect(contactService.createContact).toHaveBeenCalledTimes(1)
+                expect(stats.created).toBe(1)
+                expect(stats.errors).toBe(0)
                 done()
             })
         })

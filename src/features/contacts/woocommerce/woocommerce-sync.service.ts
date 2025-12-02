@@ -26,6 +26,21 @@ export class WooCommerceSyncService {
     ) { }
 
     /**
+     * Check if error is a MongoDB duplicate key error
+     * @param error - Error object
+     * @returns True if error is E11000 duplicate key error
+     */
+    private isDuplicateKeyError(error: any): boolean {
+        return (
+            error?.code === 11000 ||
+            error?.message?.includes('E11000') ||
+            error?.message?.includes('duplicate key')
+        )
+    }
+
+
+
+    /**
      * Process a single order and sync to contacts
      * @param order - WooCommerce order
      * @param stats - Sync statistics to update
@@ -90,6 +105,74 @@ export class WooCommerceSyncService {
                         stats.created++
                     }),
                     catchError((error) => {
+                        // Check if this is a duplicate key error (race condition)
+                        if (this.isDuplicateKeyError(error)) {
+                            this.logger.debug(
+                                `Duplicate key error for order ${order.id}, retrying as update...`,
+                            )
+                            // Retry by looking up the contact and updating
+                            return this.contactService
+                                .findAllPaginated({ email: contactData.email }, 1, 1)
+                                .pipe(
+                                    switchMap((result) => {
+                                        const existingContact = result.data[0]
+                                        if (existingContact) {
+                                            // Contact was created by concurrent process, update it
+                                            if (
+                                                WooCommerceMappingUtil.hasContactChanged(
+                                                    existingContact,
+                                                    contactData,
+                                                )
+                                            ) {
+                                                const updateData: ContactUpdate = {
+                                                    firstName: contactData.firstName,
+                                                    lastName: contactData.lastName,
+                                                    email: contactData.email,
+                                                    phone: contactData.phone,
+                                                    address: contactData.address,
+                                                    addressExtra: contactData.addressExtra,
+                                                    cityCode: contactData.cityCode,
+                                                    documentType: contactData.documentType,
+                                                    documentNumber: contactData.documentNumber,
+                                                }
+                                                return this.contactService
+                                                    .updateContact(
+                                                        existingContact._id.toString(),
+                                                        updateData,
+                                                    )
+                                                    .pipe(
+                                                        map(() => {
+                                                            stats.updated++
+                                                        }),
+                                                    )
+                                            } else {
+                                                stats.unchanged++
+                                                return of(undefined)
+                                            }
+                                        } else {
+                                            // Contact still doesn't exist, log error
+                                            stats.errors++
+                                            stats.errorDetails.push(
+                                                `Order ${order.id}: Contact not found after duplicate key error`,
+                                            )
+                                            return of(undefined)
+                                        }
+                                    }),
+                                    catchError((retryError) => {
+                                        stats.errors++
+                                        stats.errorDetails.push(
+                                            `Order ${order.id}: Retry failed - ${retryError.message}`,
+                                        )
+                                        this.logger.error(
+                                            `Failed to retry contact for order ${order.id}`,
+                                            retryError.message,
+                                        )
+                                        return of(undefined)
+                                    }),
+                                )
+                        }
+
+                        // For non-duplicate errors, log and continue
                         stats.errors++
                         stats.errorDetails.push(
                             `Order ${order.id}: Creation failed - ${error.message}`,
@@ -147,8 +230,43 @@ export class WooCommerceSyncService {
                     return of(stats)
                 }
 
-                // Process all orders
-                const processes = orders.map((order) =>
+                // Group orders by email to prevent race conditions
+                const groupedByEmail = new Map<string, WooCommerceOrder[]>()
+
+                for (const order of orders) {
+                    const email = order.billing?.email?.toLowerCase()
+                    if (email) {
+                        if (!groupedByEmail.has(email)) {
+                            groupedByEmail.set(email, [])
+                        }
+                        groupedByEmail.get(email)!.push(order)
+                    } else {
+                        // Handle missing email immediately
+                        stats.errors++
+                        stats.errorDetails.push(`Order ${order.id}: Missing email, skipping`)
+                        this.logger.warn(`Order ${order.id} missing email, skipping`)
+                    }
+                }
+
+                this.logger.debug(
+                    `Grouped ${orders.length} orders into ${groupedByEmail.size} unique emails`,
+                )
+
+                // For each unique email, process only the first order
+                // (subsequent orders with same email will be handled by update logic)
+                const uniqueOrders: WooCommerceOrder[] = []
+                groupedByEmail.forEach((orderGroup) => {
+                    // Take the first order for each email
+                    uniqueOrders.push(orderGroup[0])
+                })
+
+                // If no valid orders to process but we had errors, return stats
+                if (uniqueOrders.length === 0) {
+                    return of(stats)
+                }
+
+                // Process all unique email orders
+                const processes = uniqueOrders.map((order) =>
                     this.processOrder(order, stats),
                 )
 
