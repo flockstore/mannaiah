@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import WooCommerceRestApi from '@woocommerce/woocommerce-rest-api'
 import { Observable, from, throwError, forkJoin, of } from 'rxjs'
-import { catchError, map, expand, reduce } from 'rxjs/operators'
+import { catchError, map, expand, reduce, filter } from 'rxjs/operators'
 import { WooCommerceConfigService } from '../config/woocommerce-config.service'
 
 /**
@@ -188,5 +188,36 @@ export class WooCommerceApiService {
         }
 
         return this.getAllOrders(perPage)
+    }
+
+    /**
+     * Helper to stream pages with state
+     */
+    private streamPages(page: number, perPage: number): Observable<{ data: WooCommerceOrder[], page: number, hasMore: boolean }> {
+        return this.getOrdersPage(page, perPage).pipe(
+            map(result => ({ ...result, page }))
+        );
+    }
+
+    /**
+     * Get a stream of all orders from WooCommerce
+     * Emits pages of orders as they are fetched
+     * @param perPage - Number of orders per page (default: 100)
+     * @returns Observable emitting arrays of orders (one array per page)
+     */
+    public getOrdersStream(perPage: number = 100): Observable<WooCommerceOrder[]> {
+        if (!this.api) {
+            this.logger.warn('Cannot fetch orders: WooCommerce API not initialized')
+            return of([])
+        }
+
+        this.logger.log('Starting order stream from WooCommerce...')
+
+        return this.streamPages(1, perPage).pipe(
+            expand(result => result.hasMore ? this.streamPages(result.page + 1, perPage) : of()),
+            map(result => result.data),
+            // Filter out empty pages if any
+            filter(orders => orders.length > 0)
+        )
     }
 }

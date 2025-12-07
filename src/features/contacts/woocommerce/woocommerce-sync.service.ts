@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { Observable, of, forkJoin } from 'rxjs'
-import { map, switchMap, catchError } from 'rxjs/operators'
+import { Observable, of, forkJoin, from } from 'rxjs'
+import { map, switchMap, catchError, concatMap, reduce } from 'rxjs/operators'
 import { ContactService } from '../services/contact.service'
 import {
     ContactCreate,
@@ -221,62 +221,46 @@ export class WooCommerceSyncService {
             errorDetails: [],
         }
 
-        return this.wooCommerceApi.getOrders().pipe(
-            switchMap((orders) => {
-                stats.total = orders.length
-                this.logger.log(`Processing ${orders.length} orders...`)
+        // Keep track of processed emails to prevent duplicates within this sync run
+        const seenEmails = new Set<string>()
 
-                if (orders.length === 0) {
-                    return of(stats)
-                }
+        return this.wooCommerceApi.getOrdersStream().pipe(
+            // Process each page of orders sequentially
+            concatMap((orders) => {
+                this.logger.log(`Processing page with ${orders.length} orders...`)
+                stats.total += orders.length
 
-                // Group orders by email to prevent race conditions
-                const groupedByEmail = new Map<string, WooCommerceOrder[]>()
+                // Process orders within the page
+                // We use concatMap to process them one by one to avoid race conditions
+                // and keep memory usage low
+                return from(orders).pipe(
+                    concatMap((order: WooCommerceOrder) => {
+                        const email = order.billing?.email?.toLowerCase()
 
-                for (const order of orders) {
-                    const email = order.billing?.email?.toLowerCase()
-                    if (email) {
-                        if (!groupedByEmail.has(email)) {
-                            groupedByEmail.set(email, [])
+                        if (!email) {
+                            stats.errors++
+                            stats.errorDetails.push(`Order ${order.id}: Missing email, skipping`)
+                            this.logger.warn(`Order ${order.id} missing email, skipping`)
+                            return of(undefined)
                         }
-                        groupedByEmail.get(email)!.push(order)
-                    } else {
-                        // Handle missing email immediately
-                        stats.errors++
-                        stats.errorDetails.push(`Order ${order.id}: Missing email, skipping`)
-                        this.logger.warn(`Order ${order.id} missing email, skipping`)
-                    }
-                }
 
-                this.logger.debug(
-                    `Grouped ${orders.length} orders into ${groupedByEmail.size} unique emails`,
+                        if (seenEmails.has(email)) {
+                            // We have already processed this email in this run
+                            return of(undefined)
+                        }
+
+                        seenEmails.add(email)
+                        return this.processOrder(order, stats)
+                    }),
                 )
-
-                // For each unique email, process only the first order
-                // (subsequent orders with same email will be handled by update logic)
-                const uniqueOrders: WooCommerceOrder[] = []
-                groupedByEmail.forEach((orderGroup) => {
-                    // Take the first order for each email
-                    uniqueOrders.push(orderGroup[0])
-                })
-
-                // If no valid orders to process but we had errors, return stats
-                if (uniqueOrders.length === 0) {
-                    return of(stats)
-                }
-
-                // Process all unique email orders
-                const processes = uniqueOrders.map((order) =>
-                    this.processOrder(order, stats),
-                )
-
-                return forkJoin(processes).pipe(map(() => stats))
             }),
-            map((finalStats) => {
+            // Wait for all processing to complete and return the stats object
+            reduce(() => stats, stats),
+            map(() => {
                 this.logger.log(
-                    `Sync completed: ${finalStats.created} created, ${finalStats.updated} updated, ${finalStats.unchanged} unchanged, ${finalStats.errors} errors`,
+                    `Sync completed: ${stats.created} created, ${stats.updated} updated, ${stats.unchanged} unchanged, ${stats.errors} errors`,
                 )
-                return finalStats
+                return stats
             }),
             catchError((error) => {
                 this.logger.error(
