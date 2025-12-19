@@ -1,5 +1,5 @@
 import { Model, FilterQuery, UpdateQuery, Types } from 'mongoose'
-import { Observable, from, map, switchMap, of } from 'rxjs'
+import { Observable, from, switchMap, of } from 'rxjs'
 import { BaseDocument, QueryOptions } from '../schemas/base.schema'
 
 /**
@@ -9,7 +9,7 @@ import { BaseDocument, QueryOptions } from '../schemas/base.schema'
  * @template T - The document interface extending BaseDocument
  */
 export class BaseRepository<T extends BaseDocument> {
-  constructor(protected readonly model: Model<T>) { }
+  constructor(protected readonly model: Model<T>) {}
 
   /**
    * Create a new document
@@ -19,6 +19,7 @@ export class BaseRepository<T extends BaseDocument> {
   create(data: Partial<T>): Observable<T> {
     // Prevent manual setting of isDeleted on creation
     if (data && typeof data === 'object' && 'isDeleted' in data) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       delete (data as any).isDeleted
     }
 
@@ -93,6 +94,7 @@ export class BaseRepository<T extends BaseDocument> {
   ): Observable<T | null> {
     // Prevent manual update of isDeleted
     if (data && typeof data === 'object' && 'isDeleted' in data) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       delete (data as any).isDeleted
     }
 

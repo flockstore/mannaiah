@@ -32,7 +32,8 @@ export class ContactCreate {
   @ApiPropertyOptional({
     description: 'Legal name (required if no first/last name)',
   })
-  @ValidateIf((o) => !o.firstName && !o.lastName)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  @ValidateIf((o: any) => !o.firstName && !o.lastName)
   @IsString()
   @IsNotEmpty()
   legalName?: string
@@ -40,13 +41,17 @@ export class ContactCreate {
   @ApiPropertyOptional({
     description: 'First name (required if no legal name)',
   })
-  @ValidateIf((o) => !o.legalName)
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  @ValidateIf((o: any) => !o.legalName)
   @IsString()
   @IsNotEmpty()
   firstName?: string
 
   @ApiPropertyOptional({ description: 'Last name (required if no legal name)' })
-  @ValidateIf((o) => !o.legalName)
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  @ValidateIf((o: any) => !o.legalName)
   @IsString()
   @IsNotEmpty()
   lastName?: string

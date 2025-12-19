@@ -7,8 +7,8 @@ import { ConfigModule } from '../config/config.module'
  * Module handling file storage operations.
  */
 @Module({
-    imports: [ConfigModule],
-    providers: [StorageService, StorageConfigService],
-    exports: [StorageService],
+  imports: [ConfigModule],
+  providers: [StorageService, StorageConfigService],
+  exports: [StorageService],
 })
-export class StorageModule { }
+export class StorageModule {}

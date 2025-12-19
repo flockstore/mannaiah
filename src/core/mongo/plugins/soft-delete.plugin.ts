@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument */
 import { Schema } from 'mongoose'
 
 /**
@@ -26,7 +27,7 @@ export function softDeletePlugin(schema: Schema): void {
   /**
    * Soft delete method - marks document as deleted without removing it
    */
-  schema.methods.softDelete = async function () {
+  schema.methods.softDelete = function () {
     this.isDeleted = true
     this.deletedAt = new Date()
     return this.save()
@@ -35,7 +36,7 @@ export function softDeletePlugin(schema: Schema): void {
   /**
    * Restore method - restores a soft-deleted document
    */
-  schema.methods.restore = async function () {
+  schema.methods.restore = function () {
     this.isDeleted = false
     this.deletedAt = null
     return this.save()

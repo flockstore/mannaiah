@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing'
 import { ContactService } from './contact.service'
 import { ContactRepository } from '../repositories/contact.repository'
@@ -70,7 +71,12 @@ describe('ContactService', () => {
       service.findAllPaginated({}, 1, 10).subscribe({
         next: (result) => {
           expect(result).toEqual(mockResult)
-          expect(repository.findAllPaginated).toHaveBeenCalledWith({}, 1, 10, undefined)
+          expect(repository.findAllPaginated).toHaveBeenCalledWith(
+            {},
+            1,
+            10,
+            undefined,
+          )
           done()
         },
         error: done.fail,

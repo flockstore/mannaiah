@@ -1,20 +1,21 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import 'reflect-metadata'
 import { validate } from 'class-validator'
-import { plainToClass } from 'class-transformer'
+import { plainToInstance } from 'class-transformer'
 import { ContactUpdate } from './update-contact.dto'
 import { DocumentType } from '../interfaces/contact.interface'
 
 describe('ContactUpdate', () => {
   describe('Valid DTOs', () => {
     it('should validate an empty DTO', async () => {
-      const dto = plainToClass(ContactUpdate, {})
+      const dto = plainToInstance(ContactUpdate, {})
 
       const errors = await validate(dto)
       expect(errors).toHaveLength(0)
     })
 
     it('should validate partial updates with single field', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         phone: '+9876543210',
       })
 
@@ -23,7 +24,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should validate partial updates with multiple fields', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         phone: '+9876543210',
         address: '456 Oak Ave',
         cityCode: '110112',
@@ -34,7 +35,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should validate updating to legal name', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         legalName: 'New Company Name Inc',
       })
 
@@ -43,7 +44,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should validate updating personal names', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         firstName: 'Jane',
         lastName: 'Smith',
       })
@@ -53,7 +54,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should validate updating document information', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         documentType: DocumentType.CE,
         documentNumber: '987654321',
       })
@@ -63,7 +64,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should validate updating email', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         email: 'newemail@example.com',
       })
 
@@ -74,7 +75,7 @@ describe('ContactUpdate', () => {
 
   describe('Invalid DTOs', () => {
     it('should fail when email is invalid', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         email: 'not-an-email',
       })
 
@@ -85,7 +86,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should fail when documentType is invalid', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         documentType: 'INVALID_TYPE' as DocumentType,
       })
 
@@ -96,7 +97,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should fail when documentNumber is not a string', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         documentNumber: 123456789 as any,
       })
 
@@ -107,7 +108,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should fail when firstName is not a string', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         firstName: 123 as any,
       })
 
@@ -118,7 +119,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should fail when lastName is not a string', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         lastName: 456 as any,
       })
 
@@ -129,7 +130,7 @@ describe('ContactUpdate', () => {
     })
 
     it('should fail when phone is not a string', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         phone: 1234567890 as any,
       })
 
@@ -142,7 +143,7 @@ describe('ContactUpdate', () => {
 
   describe('Edge Cases', () => {
     it('should validate with all fields updated', async () => {
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         documentType: DocumentType.CC,
         documentNumber: '999888777',
         firstName: 'Updated',
@@ -161,7 +162,7 @@ describe('ContactUpdate', () => {
     it('should inherit validation from CreateContactDto', async () => {
       // ContactUpdate extends PartialType(CreateContactDto)
       // So it should inherit all validations but make them optional
-      const dto = plainToClass(ContactUpdate, {
+      const dto = plainToInstance(ContactUpdate, {
         email: 'valid@email.com',
       })
 

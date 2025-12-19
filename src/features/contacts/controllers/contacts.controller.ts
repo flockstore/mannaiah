@@ -5,7 +5,7 @@ import {
   Body,
   Param,
   Delete,
-  Put,
+  Patch,
   NotFoundException,
   Query,
   UseGuards,
@@ -23,18 +23,27 @@ import { map } from 'rxjs/operators'
 import { ContactService } from '../services/contact.service'
 import { ContactCreate } from '../dtos/create-contact.dto'
 import { ContactUpdate } from '../dtos/update-contact.dto'
-import { ContactDocument, DocumentType } from '../interfaces/contact.interface'
-import { AuthGuard } from '@nestjs/passport'
+import { ContactDocument } from '../interfaces/contact.interface'
+import { JwtAuthGuard } from '../../../auth/jwt-auth.guard'
 import { PermissionsGuard } from '../../../auth/permissions.guard'
 import { RequirePermissions } from '../../../auth/permissions.decorator'
 
+/**
+ * Controller for managing contacts.
+ */
 @ApiTags('contacts')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('contacts')
 export class ContactsController {
-  constructor(private readonly contactService: ContactService) { }
+  constructor(private readonly contactService: ContactService) {}
 
+  /**
+   * Create a new contact.
+   * Requires 'contacts:create' permission.
+   * @param createContactDto - The contact data to create.
+   * @returns The created contact.
+   */
   @Post()
   @ApiOperation({ summary: 'Create a new contact' })
   @ApiResponse({
@@ -47,23 +56,59 @@ export class ContactsController {
     return this.contactService.createContact(createContactDto)
   }
 
+  /**
+   * Get contacts with pagination and filtering.
+   * Requires 'contacts:read' permission.
+   * @param page - Page number (default: 1).
+   * @param limit - Items per page (default: 10).
+   * @param query - Additional filter query parameters.
+   * @returns Paginated list of contacts.
+   */
   @Get()
   @ApiOperation({ summary: 'Get contacts with pagination and filtering' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 10)' })
-  @ApiQuery({ name: 'email', required: false, type: String, description: 'Filter by email' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10)',
+  })
+  @ApiQuery({
+    name: 'email',
+    required: false,
+    type: String,
+    description: 'Filter by email',
+  })
   @ApiResponse({ status: 200, description: 'Return paginated contacts.' })
   @RequirePermissions('contacts:read')
   findAll(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query() query: any,
-  ): Observable<{ data: ContactDocument[]; total: number; page: number; limit: number }> {
+  ): Observable<{
+    data: ContactDocument[]
+    total: number
+    page: number
+    limit: number
+  }> {
     // Remove page and limit from query object as they are handled separately
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment
     const { page: _, limit: __, ...filters } = query
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.contactService.findAllPaginated(filters, page, limit)
   }
 
+  /**
+   * Get a contact by ID.
+   * Requires 'contacts:read' permission.
+   * @param id - Contact ID.
+   * @returns The contact document.
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get a contact by id' })
   @ApiParam({ name: 'id', description: 'Contact ID' })
@@ -81,7 +126,14 @@ export class ContactsController {
     )
   }
 
-  @Put(':id')
+  /**
+   * Update a contact.
+   * Requires 'contacts:update' permission.
+   * @param id - Contact ID.
+   * @param updateContactDto - The data to update.
+   * @returns The updated contact document.
+   */
+  @Patch(':id')
   @ApiOperation({ summary: 'Update a contact' })
   @ApiParam({ name: 'id', description: 'Contact ID' })
   @ApiResponse({
@@ -104,6 +156,12 @@ export class ContactsController {
     )
   }
 
+  /**
+   * Soft delete a contact.
+   * Requires 'contacts:delete' permission.
+   * @param id - Contact ID.
+   * @returns The deleted contact (or null if already deleted/not found depending on logic).
+   */
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a contact' })
   @ApiParam({ name: 'id', description: 'Contact ID' })

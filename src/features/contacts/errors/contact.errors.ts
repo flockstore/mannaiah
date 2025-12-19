@@ -9,7 +9,8 @@ export class InvalidNameCombinationError extends BadRequestException {
   constructor() {
     super({
       message: 'Cannot have both legalName and personal names',
-      details: 'A contact must be either a legal entity (with legalName) OR a natural person (with firstName and lastName), but not both',
+      details:
+        'A contact must be either a legal entity (with legalName) OR a natural person (with firstName and lastName), but not both',
     })
   }
 }
@@ -22,7 +23,8 @@ export class MissingNameError extends BadRequestException {
   constructor() {
     super({
       message: 'Must provide either legalName OR both firstName and lastName',
-      details: 'A contact requires either a legalName field OR both firstName and lastName fields',
+      details:
+        'A contact requires either a legalName field OR both firstName and lastName fields',
     })
   }
 }

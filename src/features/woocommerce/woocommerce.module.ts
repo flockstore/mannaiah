@@ -10,13 +10,13 @@ import { WooCommerceApiService } from './services/woocommerce-api.service'
  * Provides WooCommerce REST API integration
  */
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-            validate: (config) =>
-                validateUtil(WooCommerceEnvironmentVariables, config),
-        }),
-    ],
-    providers: [WooCommerceConfigService, WooCommerceApiService],
-    exports: [WooCommerceConfigService, WooCommerceApiService],
+  imports: [
+    ConfigModule.forRoot({
+      validate: (config) =>
+        validateUtil(WooCommerceEnvironmentVariables, config),
+    }),
+  ],
+  providers: [WooCommerceConfigService, WooCommerceApiService],
+  exports: [WooCommerceConfigService, WooCommerceApiService],
 })
-export class WooCommerceModule { }
+export class WooCommerceModule {}

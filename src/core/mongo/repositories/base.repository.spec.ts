@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing'
 import { MongooseModule, getModelToken } from '@nestjs/mongoose'
 import { Model, Schema } from 'mongoose'
@@ -453,12 +454,14 @@ describe('BaseRepository', () => {
       expect(page1.total).toBe(5)
       expect(page2.total).toBe(5)
       // Ensure different documents on different pages
-      expect(page1.data[0]._id.toString()).not.toBe(page2.data[0]._id.toString())
+      expect(page1.data[0]._id.toString()).not.toBe(
+        page2.data[0]._id.toString(),
+      )
     })
 
     it('should respect filter query', async () => {
       const result = await lastValueFrom(
-        repository.findAllPaginated({ name: 'Test1' }, 1, 10)
+        repository.findAllPaginated({ name: 'Test1' }, 1, 10),
       )
 
       expect(result.data).toHaveLength(1)
@@ -481,7 +484,7 @@ describe('BaseRepository', () => {
       await lastValueFrom(repository.softDelete(docs[0]._id))
 
       const result = await lastValueFrom(
-        repository.findAllPaginated({}, 1, 10, { withDeleted: true })
+        repository.findAllPaginated({}, 1, 10, { withDeleted: true }),
       )
 
       expect(result.data).toHaveLength(5)

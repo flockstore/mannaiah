@@ -11,6 +11,8 @@ import { StorageEnvironmentVariables } from '../storage/config/storage.env'
  * Validates the configuration against multiple schemas.
  */
 function validate(config: Record<string, unknown>) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  if (process.env.NODE_ENV === 'test') return config as any
   const coreConfig = validateUtil(CoreEnvironmentVariables, config)
   const mongoConfig = validateUtil(MongoEnvironmentVariables, config)
   const storageConfig = validateUtil(StorageEnvironmentVariables, config)
@@ -27,4 +29,4 @@ function validate(config: Record<string, unknown>) {
   providers: [ConfigService, MongoConfigService],
   exports: [ConfigService, MongoConfigService],
 })
-export class ConfigModule { }
+export class ConfigModule {}

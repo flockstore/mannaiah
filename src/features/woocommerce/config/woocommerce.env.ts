@@ -37,13 +37,14 @@ export class WooCommerceEnvironmentVariables {
   @Transform(({ value }) => {
     if (value === 'true') return true
     if (value === 'false') return false
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return value
   })
   WOOCOMMERCE_SYNC_CONTACTS?: boolean = false
 
   /**
    * Cron schedule expression for customer sync
-  */
+   */
   @IsOptional()
   @IsString()
   WOOCOMMERCE_SYNC_CRON?: string = '0 0 * * *'

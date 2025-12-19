@@ -6,7 +6,6 @@ import {
   ContactDocument,
   ContactCreate,
   ContactUpdate,
-  DocumentType,
 } from '../interfaces/contact.interface'
 import { ContactRepository } from '../repositories/contact.repository'
 import { PhoneUtil } from '../utils/phone.util'

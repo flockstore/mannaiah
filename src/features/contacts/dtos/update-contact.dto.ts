@@ -6,4 +6,4 @@ import { ContactCreate } from './create-contact.dto'
  * All fields from ContactCreate are optional when updating.
  * Inherits validation and Swagger documentation from ContactCreate via PartialType.
  */
-export class ContactUpdate extends PartialType(ContactCreate) { }
+export class ContactUpdate extends PartialType(ContactCreate) {}

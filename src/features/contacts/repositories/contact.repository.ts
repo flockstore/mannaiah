@@ -32,7 +32,12 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
     page: number = 1,
     limit: number = 10,
     options?: QueryOptions,
-  ): Observable<{ data: ContactDocument[]; total: number; page: number; limit: number }> {
+  ): Observable<{
+    data: ContactDocument[]
+    total: number
+    page: number
+    limit: number
+  }> {
     // Normalize email to lowercase for case-insensitive search
     if (filter.email) {
       filter.email = (filter.email as string).toLowerCase()

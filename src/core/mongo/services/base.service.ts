@@ -10,7 +10,7 @@ import { BaseRepository } from '../repositories/base.repository'
  * @template T - The document interface extending BaseDocument
  */
 export class BaseService<T extends BaseDocument> {
-  constructor(protected readonly repository: BaseRepository<T>) { }
+  constructor(protected readonly repository: BaseRepository<T>) {}
 
   /**
    * Create a new document

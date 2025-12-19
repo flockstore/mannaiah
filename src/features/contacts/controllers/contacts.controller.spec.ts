@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access */
 import { Test, TestingModule } from '@nestjs/testing'
 import { NotFoundException } from '@nestjs/common'
 import { of, throwError } from 'rxjs'
@@ -115,18 +116,25 @@ describe('ContactsController', () => {
 
   describe('findAll', () => {
     it('should return paginated contacts', (done) => {
-      const mockResult = { data: [mockContactDocument], total: 1, page: 1, limit: 10 }
+      const mockResult = {
+        data: [mockContactDocument],
+        total: 1,
+        page: 1,
+        limit: 10,
+      }
       mockContactService.findAllPaginated.mockReturnValue(of(mockResult))
 
-      controller.findAll(1, 10, { email: 'test@example.com' }).subscribe((result) => {
-        expect(result).toEqual(mockResult)
-        expect(mockContactService.findAllPaginated).toHaveBeenCalledWith(
-          { email: 'test@example.com' },
-          1,
-          10,
-        )
-        done()
-      })
+      controller
+        .findAll(1, 10, { email: 'test@example.com' })
+        .subscribe((result) => {
+          expect(result).toEqual(mockResult)
+          expect(mockContactService.findAllPaginated).toHaveBeenCalledWith(
+            { email: 'test@example.com' },
+            1,
+            10,
+          )
+          done()
+        })
     })
   })
   // Removed findByDocument tests as the endpoint was removed

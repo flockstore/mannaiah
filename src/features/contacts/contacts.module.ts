@@ -24,7 +24,12 @@ import { WooCommerceCustomerSyncCron } from './woocommerce/woocommerce-customer-
     WooCommerceModule,
   ],
   controllers: [ContactsController, WooCommerceSyncController],
-  providers: [ContactRepository, ContactService, WooCommerceSyncService, WooCommerceCustomerSyncCron],
+  providers: [
+    ContactRepository,
+    ContactService,
+    WooCommerceSyncService,
+    WooCommerceCustomerSyncCron,
+  ],
   exports: [ContactService, ContactRepository],
 })
-export class ContactsModule { }
+export class ContactsModule {}

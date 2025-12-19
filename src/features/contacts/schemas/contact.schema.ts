@@ -106,4 +106,7 @@ ContactSchema.pre('save', function (next) {
   next()
 })
 
+/**
+ * Contact model name
+ */
 export const Contact = 'Contact'
