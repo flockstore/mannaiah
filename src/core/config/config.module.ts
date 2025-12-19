@@ -5,6 +5,7 @@ import { MongoConfigService } from '../mongo/config/mongo.config'
 import { validateUtil } from './validate.util'
 import { CoreEnvironmentVariables } from './core.env'
 import { MongoEnvironmentVariables } from '../mongo/config/mongo.env'
+import { StorageEnvironmentVariables } from '../storage/config/storage.env'
 
 /**
  * Validates the configuration against multiple schemas.
@@ -12,7 +13,8 @@ import { MongoEnvironmentVariables } from '../mongo/config/mongo.env'
 function validate(config: Record<string, unknown>) {
   const coreConfig = validateUtil(CoreEnvironmentVariables, config)
   const mongoConfig = validateUtil(MongoEnvironmentVariables, config)
-  return { ...coreConfig, ...mongoConfig }
+  const storageConfig = validateUtil(StorageEnvironmentVariables, config)
+  return { ...coreConfig, ...mongoConfig, ...storageConfig }
 }
 
 @Module({
@@ -25,4 +27,4 @@ function validate(config: Record<string, unknown>) {
   providers: [ConfigService, MongoConfigService],
   exports: [ConfigService, MongoConfigService],
 })
-export class ConfigModule {}
+export class ConfigModule { }
