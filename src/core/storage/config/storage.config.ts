@@ -15,7 +15,8 @@ export class StorageConfigService {
    * Whether storage is enabled.
    */
   get isEnabled(): boolean {
-    return this.configService.get('STORAGE_ENABLED', { infer: true }) ?? false
+    const value = this.configService.get('STORAGE_ENABLED', { infer: true })
+    return value === true || (value as unknown) === 'true'
   }
 
   /**
