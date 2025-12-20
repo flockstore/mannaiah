@@ -5,13 +5,21 @@ import { Transform, Expose } from 'class-transformer'
  * Environment variables for storage configuration.
  */
 export class StorageEnvironmentVariables {
-  @IsString()
+  @IsBoolean()
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
   @Expose()
-  STORAGE_ENDPOINT: string
+  STORAGE_ENABLED: boolean = false
 
   @IsString()
+  @IsOptional()
   @Expose()
-  STORAGE_REGION: string
+  STORAGE_ENDPOINT?: string
+
+  @IsString()
+  @IsOptional()
+  @Expose()
+  STORAGE_REGION?: string
 
   @IsString()
   @IsOptional()
@@ -24,8 +32,9 @@ export class StorageEnvironmentVariables {
   STORAGE_SECRET_KEY?: string
 
   @IsString()
+  @IsOptional()
   @Expose()
-  STORAGE_BUCKET_NAME: string
+  STORAGE_BUCKET_NAME?: string
 
   @IsBoolean()
   @IsOptional()

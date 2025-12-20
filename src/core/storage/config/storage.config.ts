@@ -9,19 +9,26 @@ import { StorageEnvironmentVariables } from './storage.env'
 export class StorageConfigService {
   constructor(
     private configService: ConfigService<StorageEnvironmentVariables, true>,
-  ) {}
+  ) { }
+
+  /**
+   * Whether storage is enabled.
+   */
+  get isEnabled(): boolean {
+    return this.configService.get('STORAGE_ENABLED', { infer: true }) ?? false
+  }
 
   /**
    * The storage endpoint URL.
    */
-  get endpoint(): string {
+  get endpoint(): string | undefined {
     return this.configService.get('STORAGE_ENDPOINT', { infer: true })
   }
 
   /**
    * The storage region.
    */
-  get region(): string {
+  get region(): string | undefined {
     return this.configService.get('STORAGE_REGION', { infer: true })
   }
 
@@ -42,7 +49,7 @@ export class StorageConfigService {
   /**
    * The target bucket name.
    */
-  get bucketName(): string {
+  get bucketName(): string | undefined {
     return this.configService.get('STORAGE_BUCKET_NAME', { infer: true })
   }
 
