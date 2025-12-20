@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsOptional } from 'class-validator'
+import { IsString, IsBoolean, IsOptional, ValidateIf } from 'class-validator'
 import { Transform, Expose } from 'class-transformer'
 
 /**
@@ -11,30 +11,32 @@ export class StorageEnvironmentVariables {
   @Expose()
   STORAGE_ENABLED: boolean = false
 
+  @ValidateIf((o) => o.STORAGE_ENABLED)
   @IsString()
-  @IsOptional()
   @Expose()
-  STORAGE_ENDPOINT?: string
+  STORAGE_ENDPOINT: string
 
+  @ValidateIf((o) => o.STORAGE_ENABLED)
   @IsString()
-  @IsOptional()
   @Expose()
-  STORAGE_REGION?: string
+  STORAGE_REGION: string
 
+  @ValidateIf((o) => o.STORAGE_ENABLED)
   @IsString()
   @IsOptional()
   @Expose()
   STORAGE_ACCESS_KEY?: string
 
+  @ValidateIf((o) => o.STORAGE_ENABLED)
   @IsString()
   @IsOptional()
   @Expose()
   STORAGE_SECRET_KEY?: string
 
+  @ValidateIf((o) => o.STORAGE_ENABLED)
   @IsString()
-  @IsOptional()
   @Expose()
-  STORAGE_BUCKET_NAME?: string
+  STORAGE_BUCKET_NAME: string
 
   @IsBoolean()
   @IsOptional()
