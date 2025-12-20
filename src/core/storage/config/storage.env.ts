@@ -1,10 +1,11 @@
 import { IsString, IsBoolean, IsOptional, ValidateIf } from 'class-validator'
-import { Transform, Expose } from 'class-transformer'
+import { Transform, Expose, Type } from 'class-transformer'
 
 /**
  * Environment variables for storage configuration.
  */
 export class StorageEnvironmentVariables {
+  @Type(() => String)
   @IsBoolean()
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)
