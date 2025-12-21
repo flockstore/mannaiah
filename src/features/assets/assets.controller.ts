@@ -26,6 +26,9 @@ import {
 } from '@nestjs/swagger'
 import { map } from 'rxjs'
 
+import { Asset } from './schemas/asset.schema'
+import { PaginatedAssetResponse } from './dto/paginated-asset-response.dto'
+
 @ApiTags('assets')
 @Controller('assets')
 export class AssetsController {
@@ -58,6 +61,7 @@ export class AssetsController {
   @ApiResponse({
     status: 201,
     description: 'The asset has been successfully uploaded and created.',
+    type: Asset,
   })
   @ApiResponse({
     status: 400,
@@ -93,7 +97,11 @@ export class AssetsController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all assets' })
-  @ApiResponse({ status: 200, description: 'Return paginated assets.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return paginated assets.',
+    type: PaginatedAssetResponse,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   findAll(
     @Query('page') page: number = 1,
@@ -127,7 +135,7 @@ export class AssetsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get an asset by id' })
   @ApiParam({ name: 'id', description: 'Asset ID' })
-  @ApiResponse({ status: 200, description: 'Return the asset.' })
+  @ApiResponse({ status: 200, description: 'Return the asset.', type: Asset })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Asset not found.' })
   findOne(@Param('id') id: string) {
@@ -149,6 +157,7 @@ export class AssetsController {
   @ApiResponse({
     status: 200,
     description: 'The asset has been successfully deleted.',
+    type: Asset,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({
