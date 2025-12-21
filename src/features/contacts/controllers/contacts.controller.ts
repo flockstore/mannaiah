@@ -30,6 +30,7 @@ import { RequirePermissions } from '../../../auth/permissions.decorator'
 
 /**
  * Controller for managing contacts.
+ * Provides endpoints for CRUD operations on contacts.
  */
 @ApiTags('contacts')
 @ApiBearerAuth()
@@ -41,6 +42,7 @@ export class ContactsController {
   /**
    * Create a new contact.
    * Requires 'contacts:create' permission.
+   *
    * @param createContactDto - The contact data to create.
    * @returns The created contact.
    */
@@ -51,6 +53,11 @@ export class ContactsController {
     description: 'The contact has been successfully created.',
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions.',
+  })
   @RequirePermissions('contacts:create')
   create(@Body() createContactDto: ContactCreate): Observable<ContactDocument> {
     return this.contactService.createContact(createContactDto)
@@ -59,6 +66,7 @@ export class ContactsController {
   /**
    * Get contacts with pagination and filtering.
    * Requires 'contacts:read' permission.
+   *
    * @param page - Page number (default: 1).
    * @param limit - Items per page (default: 10).
    * @param query - Additional filter query parameters.
@@ -85,6 +93,11 @@ export class ContactsController {
     description: 'Filter by email',
   })
   @ApiResponse({ status: 200, description: 'Return paginated contacts.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions.',
+  })
   @RequirePermissions('contacts:read')
   findAll(
     @Query('page') page: number = 1,
@@ -96,7 +109,6 @@ export class ContactsController {
     page: number
     limit: number
   }> {
-    // Remove page and limit from query object as they are handled separately
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment
     const { page: _, limit: __, ...filters } = query
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -106,6 +118,7 @@ export class ContactsController {
   /**
    * Get a contact by ID.
    * Requires 'contacts:read' permission.
+   *
    * @param id - Contact ID.
    * @returns The contact document.
    */
@@ -113,6 +126,11 @@ export class ContactsController {
   @ApiOperation({ summary: 'Get a contact by id' })
   @ApiParam({ name: 'id', description: 'Contact ID' })
   @ApiResponse({ status: 200, description: 'Return the contact.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions.',
+  })
   @ApiResponse({ status: 404, description: 'Contact not found.' })
   @RequirePermissions('contacts:read')
   findOne(@Param('id') id: string): Observable<ContactDocument> {
@@ -129,6 +147,7 @@ export class ContactsController {
   /**
    * Update a contact.
    * Requires 'contacts:update' permission.
+   *
    * @param id - Contact ID.
    * @param updateContactDto - The data to update.
    * @returns The updated contact document.
@@ -139,6 +158,12 @@ export class ContactsController {
   @ApiResponse({
     status: 200,
     description: 'The contact has been successfully updated.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions.',
   })
   @ApiResponse({ status: 404, description: 'Contact not found.' })
   @RequirePermissions('contacts:update')
@@ -159,6 +184,7 @@ export class ContactsController {
   /**
    * Soft delete a contact.
    * Requires 'contacts:delete' permission.
+   *
    * @param id - Contact ID.
    * @returns The deleted contact (or null if already deleted/not found depending on logic).
    */
@@ -168,6 +194,11 @@ export class ContactsController {
   @ApiResponse({
     status: 200,
     description: 'The contact has been successfully deleted.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions.',
   })
   @ApiResponse({ status: 404, description: 'Contact not found.' })
   @RequirePermissions('contacts:delete')

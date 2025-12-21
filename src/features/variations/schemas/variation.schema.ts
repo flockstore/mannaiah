@@ -38,6 +38,21 @@ export class Variation {
    */
   @Prop({ required: true })
   value: string
+
+  @Prop()
+  createdAt: Date
+
+  @Prop()
+  updatedAt: Date
+
+  @Prop({ default: false })
+  isDeleted: boolean
+
+  @Prop({ type: Date, default: null })
+  deletedAt: Date | null
+
+  softDelete: () => Promise<this>
+  restore: () => Promise<this>
 }
 
 export const VariationSchema = SchemaFactory.createForClass(Variation)

@@ -5,6 +5,7 @@ import { ProductsController } from './products.controller'
 import { Product, ProductSchema } from './schemas/product.schema'
 import { AssetsModule } from '../assets/assets.module'
 import { VariationsModule } from '../variations/variations.module'
+import { ProductsRepository } from './products.repository'
 
 /**
  * Module for the Product feature.
@@ -16,7 +17,7 @@ import { VariationsModule } from '../variations/variations.module'
     VariationsModule,
   ],
   controllers: [ProductsController],
-  providers: [ProductsService],
+  providers: [ProductsService, ProductsRepository],
   exports: [ProductsService],
 })
 export class ProductsModule {}

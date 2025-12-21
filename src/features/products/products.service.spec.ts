@@ -1,31 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { ProductsService } from './products.service'
-import { getModelToken } from '@nestjs/mongoose'
-import { Product } from './schemas/product.schema'
+import { ProductsRepository } from './products.repository'
 import { AssetsService } from '../assets/assets.service'
 import { VariationsService } from '../variations/variations.service'
-import {
-  // ConflictException,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common'
-
-class MockProductModel {
-  save: any
-  constructor(private data: any) {
-    Object.assign(this, data)
-    this.save = jest.fn().mockResolvedValue(this.data)
-  }
-  static find = jest.fn()
-  static findById = jest.fn()
-  static findByIdAndUpdate = jest.fn()
-  static findByIdAndDelete = jest.fn()
-}
+import { NotFoundException, BadRequestException } from '@nestjs/common'
+import { of } from 'rxjs'
 
 describe('ProductsService', () => {
   let service: ProductsService
-  // let assetsService: AssetsService
-  // let variationsService: VariationsService
+
+  const mockProductsRepository = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    update: jest.fn(),
+    softDelete: jest.fn(),
+  }
 
   const mockAssetsService = {
     findOne: jest.fn().mockResolvedValue({}),
@@ -40,8 +30,8 @@ describe('ProductsService', () => {
       providers: [
         ProductsService,
         {
-          provide: getModelToken(Product.name),
-          useValue: MockProductModel,
+          provide: ProductsRepository,
+          useValue: mockProductsRepository,
         },
         {
           provide: AssetsService,
@@ -55,8 +45,6 @@ describe('ProductsService', () => {
     }).compile()
 
     service = module.get<ProductsService>(ProductsService)
-    // assetsService = module.get<AssetsService>(AssetsService)
-    // variationsService = module.get<VariationsService>(VariationsService)
 
     jest.clearAllMocks()
   })
@@ -68,6 +56,7 @@ describe('ProductsService', () => {
   describe('create', () => {
     it('should create a product', async () => {
       const dto = { sku: 'SKU1' }
+      mockProductsRepository.create.mockReturnValue(of(dto))
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       const result = await service.create(dto as any)
       expect(result).toEqual(dto)
@@ -100,5 +89,59 @@ describe('ProductsService', () => {
     })
   })
 
-  // ... (Other tests similar to before, adapted if needed)
+  describe('findAll', () => {
+    it('should return all products', async () => {
+      const products = [{ sku: 'SKU1' }]
+      mockProductsRepository.findAll.mockReturnValue(of(products))
+      const result = await service.findAll()
+      expect(result).toEqual(products)
+    })
+  })
+
+  describe('findOne', () => {
+    it('should return a product if found', async () => {
+      const product = { sku: 'SKU1' }
+      mockProductsRepository.findById.mockReturnValue(of(product))
+      const result = await service.findOne('id')
+      expect(result).toEqual(product)
+    })
+
+    it('should throw NotFoundException if not found', async () => {
+      mockProductsRepository.findById.mockReturnValue(of(null))
+      await expect(service.findOne('id')).rejects.toThrow(NotFoundException)
+    })
+  })
+
+  describe('update', () => {
+    it('should update a product', async () => {
+      const dto = { sku: 'SKU2' }
+      const updatedProduct = { sku: 'SKU2' }
+      mockProductsRepository.update.mockReturnValue(of(updatedProduct))
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const result = await service.update('id', dto as any)
+      expect(result).toEqual(updatedProduct)
+    })
+
+    it('should throw NotFoundException if not found', async () => {
+      mockProductsRepository.update.mockReturnValue(of(null))
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await expect(service.update('id', {} as any)).rejects.toThrow(
+        NotFoundException,
+      )
+    })
+  })
+
+  describe('remove', () => {
+    it('should remove a product', async () => {
+      const deletedProduct = { sku: 'SKU1' }
+      mockProductsRepository.softDelete.mockReturnValue(of(deletedProduct))
+      await service.remove('id')
+      expect(mockProductsRepository.softDelete).toHaveBeenCalledWith('id')
+    })
+
+    it('should throw NotFoundException if not found', async () => {
+      mockProductsRepository.softDelete.mockReturnValue(of(null))
+      await expect(service.remove('id')).rejects.toThrow(NotFoundException)
+    })
+  })
 })

@@ -4,9 +4,9 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common'
-import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
-import { Product, ProductDocument } from './schemas/product.schema'
+import { lastValueFrom } from 'rxjs'
+import { Product } from './schemas/product.schema'
+import { ProductsRepository } from './products.repository'
 import {
   CreateProductDto,
   UpdateProductDto,
@@ -21,19 +21,27 @@ import { VariationsService } from '../variations/variations.service'
 @Injectable()
 export class ProductsService {
   constructor(
-    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly productsRepository: ProductsRepository,
     private assetsService: AssetsService,
     private variationsService: VariationsService,
   ) {}
 
+  /**
+   * Validates the product gallery.
+   * Checks that:
+   * 1. There is at most one main image.
+   * 2. All referenced assets exist.
+   * 3. All referenced variations (if any) exist.
+   *
+   * @param gallery - The gallery items to validate.
+   * @throws BadRequestException if multiple main images are found or if any asset/variation is not found.
+   */
   private async validateGallery(gallery: GalleryItemDto[]) {
-    // Check for duplicate main images
     const mainImages = gallery.filter((item) => item.isMain)
     if (mainImages.length > 1) {
       throw new BadRequestException('A product can only have one main image')
     }
 
-    // Verify assets exist
     for (const item of gallery) {
       try {
         await this.assetsService.findOne(item.assetId)
@@ -53,6 +61,12 @@ export class ProductsService {
     }
   }
 
+  /**
+   * Validates that all referenced variations exist.
+   *
+   * @param variationIds - Array of variation IDs to check.
+   * @throws BadRequestException if any variation is not found.
+   */
   private async validateVariations(variationIds: string[]) {
     for (const id of variationIds) {
       try {
@@ -65,6 +79,8 @@ export class ProductsService {
 
   /**
    * Creates a new product.
+   * Validates gallery and variations before creation.
+   *
    * @param createProductDto - The product data.
    * @returns The created product.
    * @throws ConflictException if SKU already exists.
@@ -78,8 +94,9 @@ export class ProductsService {
     }
 
     try {
-      const createdProduct = new this.productModel(createProductDto)
-      return await createdProduct.save()
+      return await lastValueFrom(
+        this.productsRepository.create(createProductDto as any),
+      )
     } catch (error) {
       if ((error as { code: number }).code === 11000) {
         throw new ConflictException('Product with this SKU already exists')
@@ -90,20 +107,22 @@ export class ProductsService {
 
   /**
    * Finds all products.
+   *
    * @returns List of products.
    */
   async findAll(): Promise<Product[]> {
-    return this.productModel.find().exec()
+    return lastValueFrom(this.productsRepository.findAll())
   }
 
   /**
    * Finds a product by ID.
+   *
    * @param id - Product ID.
    * @returns The product.
    * @throws NotFoundException if not found.
    */
   async findOne(id: string): Promise<Product> {
-    const product = await this.productModel.findById(id).exec()
+    const product = await lastValueFrom(this.productsRepository.findById(id))
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`)
     }
@@ -112,9 +131,12 @@ export class ProductsService {
 
   /**
    * Updates a product.
+   * Validates gallery and variations if they are being updated.
+   *
    * @param id - Product ID.
    * @param updateProductDto - Data to update.
    * @returns The updated product.
+   * @throws NotFoundException if product not found.
    */
   async update(
     id: string,
@@ -127,22 +149,24 @@ export class ProductsService {
       await this.validateVariations(updateProductDto.variations)
     }
 
-    const existingProduct = await this.productModel
-      .findByIdAndUpdate(id, { $set: updateProductDto }, { new: true })
-      .exec()
+    const updatedProduct = await lastValueFrom(
+      this.productsRepository.update(id, updateProductDto),
+    )
 
-    if (!existingProduct) {
+    if (!updatedProduct) {
       throw new NotFoundException(`Product with ID ${id} not found`)
     }
-    return existingProduct
+    return updatedProduct
   }
 
   /**
    * Deletes a product.
+   *
    * @param id - Product ID.
+   * @throws NotFoundException if product not found.
    */
   async remove(id: string): Promise<void> {
-    const result = await this.productModel.findByIdAndDelete(id).exec()
+    const result = await lastValueFrom(this.productsRepository.softDelete(id))
     if (!result) {
       throw new NotFoundException(`Product with ID ${id} not found`)
     }

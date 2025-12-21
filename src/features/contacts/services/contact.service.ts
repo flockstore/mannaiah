@@ -22,12 +22,14 @@ export class ContactService extends BaseService<ContactDocument> {
   }
 
   /**
-   * Validate name combination rules
-   * @param legalName - Legal name for entities
-   * @param firstName - First name for persons
-   * @param lastName - Last name for persons
-   * @throws InvalidNameCombinationError if both legalName and personal names are present
-   * @throws MissingNameError if neither legalName nor full personal name is present
+   * Validate name combination rules.
+   * A contact must have either a legal name OR a personal name (first + last), but not both.
+   *
+   * @param legalName - Legal name for entities.
+   * @param firstName - First name for persons.
+   * @param lastName - Last name for persons.
+   * @throws InvalidNameCombinationError if both legalName and personal names are present.
+   * @throws MissingNameError if neither legalName nor full personal name is present.
    */
   validateNames(
     legalName?: string,
@@ -48,9 +50,11 @@ export class ContactService extends BaseService<ContactDocument> {
   }
 
   /**
-   * Create a new contact with validation
-   * @param createDto - Data to create contact
-   * @returns Observable emitting the created contact
+   * Create a new contact with validation.
+   * Sanitizes phone number before creation.
+   *
+   * @param createDto - Data to create contact.
+   * @returns Observable emitting the created contact.
    */
   createContact(createDto: ContactCreate): Observable<ContactDocument> {
     return of(createDto).pipe(
@@ -65,10 +69,15 @@ export class ContactService extends BaseService<ContactDocument> {
   }
 
   /**
-   * Update a contact with validation
-   * @param id - Contact ID
-   * @param updateDto - Data to update
-   * @returns Observable emitting the updated document or null
+   * Update a contact with validation.
+   * If names are being updated, it fetches the existing contact to validate
+   * the final state of the contact's names (merging existing data with updates)
+   * to ensure name combination rules are still met.
+   * Sanitizes phone number if provided.
+   *
+   * @param id - Contact ID.
+   * @param updateDto - Data to update.
+   * @returns Observable emitting the updated document or null if not found.
    */
   updateContact(
     id: string,
@@ -78,7 +87,6 @@ export class ContactService extends BaseService<ContactDocument> {
       updateDto.phone = PhoneUtil.sanitize(updateDto.phone)
     }
 
-    // If names are being updated, we need to validate against existing data + updates
     if (
       updateDto.legalName !== undefined ||
       updateDto.firstName !== undefined ||

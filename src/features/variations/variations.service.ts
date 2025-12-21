@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { lastValueFrom } from 'rxjs'
 import { Variation } from './schemas/variation.schema'
+import { VariationsRepository } from './variations.repository'
 import {
   CreateVariationDto,
   UpdateVariationDto,
@@ -10,39 +10,43 @@ import { randomUUID } from 'crypto'
 
 @Injectable()
 export class VariationsService {
-  constructor(
-    @InjectModel(Variation.name) private variationModel: Model<Variation>,
-  ) {}
+  constructor(private readonly variationsRepository: VariationsRepository) {}
 
   /**
    * Creates a new variation.
+   *
    * @param createVariationDto - Data to create the variation.
    * @returns The created variation.
    */
   async create(createVariationDto: CreateVariationDto): Promise<Variation> {
-    const variation = new this.variationModel({
-      ...createVariationDto,
-      _id: randomUUID(),
-    })
-    return variation.save()
+    return lastValueFrom(
+      this.variationsRepository.create({
+        ...createVariationDto,
+        _id: randomUUID(),
+      }),
+    )
   }
 
   /**
    * Retrieves all variations.
+   *
    * @returns List of all variations.
    */
   async findAll(): Promise<Variation[]> {
-    return this.variationModel.find().exec()
+    return lastValueFrom(this.variationsRepository.findAll())
   }
 
   /**
    * Retrieves a single variation by ID.
+   *
    * @param id - Variation ID.
    * @returns The found variation.
    * @throws NotFoundException if variation is not found.
    */
   async findOne(id: string): Promise<Variation> {
-    const variation = await this.variationModel.findById(id).exec()
+    const variation = await lastValueFrom(
+      this.variationsRepository.findById(id),
+    )
     if (!variation) {
       throw new NotFoundException(`Variation with ID ${id} not found`)
     }
@@ -51,6 +55,7 @@ export class VariationsService {
 
   /**
    * Updates a variation.
+   *
    * @param id - Variation ID.
    * @param updateVariationDto - Data to update.
    * @returns The updated variation.
@@ -60,9 +65,9 @@ export class VariationsService {
     id: string,
     updateVariationDto: UpdateVariationDto,
   ): Promise<Variation> {
-    const variation = await this.variationModel
-      .findByIdAndUpdate(id, { $set: updateVariationDto }, { new: true })
-      .exec()
+    const variation = await lastValueFrom(
+      this.variationsRepository.update(id, updateVariationDto),
+    )
     if (!variation) {
       throw new NotFoundException(`Variation with ID ${id} not found`)
     }
@@ -71,11 +76,12 @@ export class VariationsService {
 
   /**
    * Deletes a variation.
+   *
    * @param id - Variation ID.
    * @throws NotFoundException if variation is not found.
    */
   async remove(id: string): Promise<void> {
-    const result = await this.variationModel.findByIdAndDelete(id).exec()
+    const result = await lastValueFrom(this.variationsRepository.softDelete(id))
     if (!result) {
       throw new NotFoundException(`Variation with ID ${id} not found`)
     }

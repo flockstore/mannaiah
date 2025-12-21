@@ -2,17 +2,17 @@ import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model } from 'mongoose'
 import { BaseRepository } from '../../core/mongo/repositories/base.repository'
-import { Asset, AssetDocument } from './schemas/asset.schema'
+import { Product, ProductDocument } from './schemas/product.schema'
 
 /**
- * Repository for Asset documents.
+ * Repository for Product documents.
  * Extends BaseRepository to provide standard CRUD operations.
  */
 @Injectable()
-export class AssetsRepository extends BaseRepository<AssetDocument> {
+export class ProductsRepository extends BaseRepository<ProductDocument> {
   constructor(
-    @InjectModel(Asset.name) private assetModel: Model<AssetDocument>,
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
   ) {
-    super(assetModel)
+    super(productModel)
   }
 }

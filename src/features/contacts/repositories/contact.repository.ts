@@ -19,13 +19,14 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
   }
 
   /**
-   * Override findAllPaginated to add contact-specific query preprocessing
-   * (e.g., email normalization)
-   * @param filter - Query filter
-   * @param page - Page number (1-based)
-   * @param limit - Items per page
-   * @param options - Query options
-   * @returns Observable emitting paginated results
+   * Override findAllPaginated to add contact-specific query preprocessing.
+   * Specifically, this method normalizes the 'email' filter to lowercase to support case-insensitive search.
+   *
+   * @param filter - Query filter.
+   * @param page - Page number (1-based).
+   * @param limit - Items per page.
+   * @param options - Query options.
+   * @returns Observable emitting paginated results.
    */
   findAllPaginated(
     filter: FilterQuery<ContactDocument> = {},
@@ -38,7 +39,6 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
     page: number
     limit: number
   }> {
-    // Normalize email to lowercase for case-insensitive search
     if (filter.email) {
       filter.email = (filter.email as string).toLowerCase()
     }

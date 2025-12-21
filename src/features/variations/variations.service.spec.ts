@@ -1,23 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { VariationsService } from './variations.service'
-import { getModelToken } from '@nestjs/mongoose'
-import { Variation, VariationDefinition } from './schemas/variation.schema'
-// import { randomUUID } from 'crypto'
+import { VariationsRepository } from './variations.repository'
+import { VariationDefinition } from './schemas/variation.schema'
+import { NotFoundException } from '@nestjs/common'
+import { of } from 'rxjs'
 
 describe('VariationsService', () => {
   let service: VariationsService
 
-  class MockVariationModel {
-    save: any
-    constructor(private data: any) {
-      Object.assign(this, data)
-      this.save = jest.fn().mockResolvedValue(this.data)
-    }
-
-    static find = jest.fn()
-    static findById = jest.fn()
-    static findByIdAndUpdate = jest.fn()
-    static findByIdAndDelete = jest.fn()
+  const mockVariationsRepository = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    update: jest.fn(),
+    softDelete: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -25,8 +21,8 @@ describe('VariationsService', () => {
       providers: [
         VariationsService,
         {
-          provide: getModelToken(Variation.name),
-          useValue: MockVariationModel,
+          provide: VariationsRepository,
+          useValue: mockVariationsRepository,
         },
       ],
     }).compile()
@@ -47,19 +43,18 @@ describe('VariationsService', () => {
         definition: VariationDefinition.COLOR,
         value: '#000000',
       }
-      // Logic creates new instance
+      const createdVariation = { ...dto, _id: 'uuid' }
+      mockVariationsRepository.create.mockReturnValue(of(createdVariation))
 
       const result = await service.create(dto)
-      expect(result).toMatchObject(dto)
+      expect(result).toEqual(createdVariation)
     })
   })
 
   describe('findAll', () => {
     it('should return array of variations', async () => {
       const variations = [{ name: 'v1' }, { name: 'v2' }]
-      MockVariationModel.find.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(variations),
-      })
+      mockVariationsRepository.findAll.mockReturnValue(of(variations))
 
       const result = await service.findAll()
       expect(result).toEqual(variations)
@@ -69,22 +64,15 @@ describe('VariationsService', () => {
   describe('findOne', () => {
     it('should return variation if found', async () => {
       const variation = { _id: 'uuid', name: 'v1' }
-      MockVariationModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(variation),
-      })
+      mockVariationsRepository.findById.mockReturnValue(of(variation))
 
       const result = await service.findOne('uuid')
       expect(result).toEqual(variation)
     })
 
     it('should throw NotFoundException if not found', async () => {
-      MockVariationModel.findById.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      })
-
-      await expect(service.findOne('uuid')).rejects.toThrow(
-        'Variation with ID uuid not found',
-      )
+      mockVariationsRepository.findById.mockReturnValue(of(null))
+      await expect(service.findOne('uuid')).rejects.toThrow(NotFoundException)
     })
   })
 
@@ -92,50 +80,33 @@ describe('VariationsService', () => {
     it('should update and return variation', async () => {
       const dto = { name: 'New Name' }
       const updatedVariation = { _id: 'uuid', name: 'New Name' }
-
-      MockVariationModel.findByIdAndUpdate.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(updatedVariation),
-      })
+      mockVariationsRepository.update.mockReturnValue(of(updatedVariation))
 
       const result = await service.update('uuid', dto)
-
-      expect(MockVariationModel.findByIdAndUpdate).toHaveBeenCalledWith(
-        'uuid',
-        { $set: dto },
-        { new: true },
-      )
+      expect(mockVariationsRepository.update).toHaveBeenCalledWith('uuid', dto)
       expect(result).toEqual(updatedVariation)
     })
 
     it('should throw NotFoundException if update target not found', async () => {
-      MockVariationModel.findByIdAndUpdate.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      })
-
+      mockVariationsRepository.update.mockReturnValue(of(null))
       await expect(service.update('uuid', { name: 'test' })).rejects.toThrow(
-        'Variation with ID uuid not found',
+        NotFoundException,
       )
     })
   })
 
   describe('remove', () => {
     it('should delete variation', async () => {
-      MockVariationModel.findByIdAndDelete.mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ deletedCount: 1 }),
-      })
+      const deletedVariation = { _id: 'uuid' }
+      mockVariationsRepository.softDelete.mockReturnValue(of(deletedVariation))
 
       await service.remove('uuid')
-      expect(MockVariationModel.findByIdAndDelete).toHaveBeenCalledWith('uuid')
+      expect(mockVariationsRepository.softDelete).toHaveBeenCalledWith('uuid')
     })
 
     it('should throw NotFoundException if delete target not found', async () => {
-      MockVariationModel.findByIdAndDelete.mockReturnValue({
-        exec: jest.fn().mockResolvedValue(null),
-      })
-
-      await expect(service.remove('uuid')).rejects.toThrow(
-        'Variation with ID uuid not found',
-      )
+      mockVariationsRepository.softDelete.mockReturnValue(of(null))
+      await expect(service.remove('uuid')).rejects.toThrow(NotFoundException)
     })
   })
 })

@@ -32,15 +32,11 @@ export class WooCommerceSyncController {
   triggerSync() {
     this.logger.log('Manual sync triggered via API')
 
-    // Trigger sync asynchronously without waiting
     this.syncCron.executeSync().catch((error) => {
       this.logger.error(
         'Error in manual sync execution',
         error instanceof Error ? error.stack : String(error),
       )
     })
-
-    // Return immediately
-    return
   }
 }

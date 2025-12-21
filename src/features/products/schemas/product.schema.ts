@@ -105,6 +105,21 @@ export class Product {
    */
   @Prop({ type: [String], default: [] })
   variations: string[]
+
+  @Prop()
+  createdAt: Date
+
+  @Prop()
+  updatedAt: Date
+
+  @Prop({ default: false })
+  isDeleted: boolean
+
+  @Prop({ type: Date, default: null })
+  deletedAt: Date | null
+
+  softDelete: () => Promise<this>
+  restore: () => Promise<this>
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product)
