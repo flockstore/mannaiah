@@ -44,6 +44,7 @@ describe('BaseRepository', () => {
     }).compile()
 
     model = module.get<Model<TestDocument>>(getModelToken(TestModel))
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     repository = new BaseRepository(model)
   })
 

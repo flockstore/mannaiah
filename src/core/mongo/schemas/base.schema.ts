@@ -21,11 +21,12 @@ export interface SoftDeleteMethods {
  * Base interface for all MongoDB documents.
  * Includes common fields for auditing and soft delete functionality.
  */
-export interface BaseDocument extends Document, SoftDeleteMethods {
+export interface BaseDocument
+  extends Omit<Document<any>, '_id'>, SoftDeleteMethods {
   /**
    * MongoDB unique identifier
    */
-  _id: Types.ObjectId
+  _id: Types.ObjectId | string
 
   /**
    * Timestamp when the document was created

@@ -9,7 +9,7 @@ import { StorageEnvironmentVariables } from './storage.env'
 export class StorageConfigService {
   constructor(
     private configService: ConfigService<StorageEnvironmentVariables, true>,
-  ) { }
+  ) {}
 
   /**
    * Whether storage is enabled.

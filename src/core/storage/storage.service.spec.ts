@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing'
 import { StorageService } from './storage.service'
 import { StorageConfigService } from './config/storage.config'
@@ -27,11 +27,11 @@ describe('StorageService', () => {
     forcePathStyle: true,
   }
 
-  beforeEach(async () => {
+  beforeEach(() => {
     s3Mock.reset()
     loggerSpy = jest
       .spyOn(Logger.prototype, 'warn')
-      .mockImplementation(() => { })
+      .mockImplementation(() => {})
   })
 
   afterEach(() => {
@@ -59,7 +59,9 @@ describe('StorageService', () => {
 
     it('should log a warning if credentials are missing', async () => {
       jest.clearAllMocks() // Clear previous instantiations
-      loggerSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => { })
+      loggerSpy = jest
+        .spyOn(Logger.prototype, 'warn')
+        .mockImplementation(() => {})
 
       const module: TestingModule = await Test.createTestingModule({
         providers: [
@@ -117,7 +119,7 @@ describe('StorageService', () => {
             provide: StorageConfigService,
             useValue: {
               ...mockConfig,
-              isEnabled: false
+              isEnabled: false,
             },
           },
         ],
@@ -128,20 +130,26 @@ describe('StorageService', () => {
 
     it('should warn that storage is disabled on initialization', () => {
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Storage is disabled')
+        expect.stringContaining('Storage is disabled'),
       )
     })
 
     it('should throw error when calling uploadFile', async () => {
-      await expect(service.uploadFile('key', 'body')).rejects.toThrow('Storage is disabled')
+      await expect(service.uploadFile('key', 'body')).rejects.toThrow(
+        'Storage is disabled',
+      )
     })
 
     it('should throw error when calling getFile', async () => {
-      await expect(service.getFile('key')).rejects.toThrow('Storage is disabled')
+      await expect(service.getFile('key')).rejects.toThrow(
+        'Storage is disabled',
+      )
     })
 
     it('should throw error when calling deleteFile', async () => {
-      await expect(service.deleteFile('key')).rejects.toThrow('Storage is disabled')
+      await expect(service.deleteFile('key')).rejects.toThrow(
+        'Storage is disabled',
+      )
     })
   })
 

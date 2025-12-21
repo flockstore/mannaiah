@@ -12,29 +12,29 @@ export class StorageEnvironmentVariables {
   @Expose()
   STORAGE_ENABLED: boolean = false
 
-  @ValidateIf((o) => o.STORAGE_ENABLED)
+  @ValidateIf((o: StorageEnvironmentVariables) => o.STORAGE_ENABLED)
   @IsString()
   @Expose()
   STORAGE_ENDPOINT: string
 
-  @ValidateIf((o) => o.STORAGE_ENABLED)
+  @ValidateIf((o: StorageEnvironmentVariables) => o.STORAGE_ENABLED)
   @IsString()
   @Expose()
   STORAGE_REGION: string
 
-  @ValidateIf((o) => o.STORAGE_ENABLED)
+  @ValidateIf((o: StorageEnvironmentVariables) => o.STORAGE_ENABLED)
   @IsString()
   @IsOptional()
   @Expose()
   STORAGE_ACCESS_KEY?: string
 
-  @ValidateIf((o) => o.STORAGE_ENABLED)
+  @ValidateIf((o: StorageEnvironmentVariables) => o.STORAGE_ENABLED)
   @IsString()
   @IsOptional()
   @Expose()
   STORAGE_SECRET_KEY?: string
 
-  @ValidateIf((o) => o.STORAGE_ENABLED)
+  @ValidateIf((o: StorageEnvironmentVariables) => o.STORAGE_ENABLED)
   @IsString()
   @Expose()
   STORAGE_BUCKET_NAME: string

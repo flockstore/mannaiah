@@ -50,9 +50,9 @@ export class StorageService {
       credentials:
         accessKeyId && secretAccessKey
           ? {
-            accessKeyId,
-            secretAccessKey,
-          }
+              accessKeyId,
+              secretAccessKey,
+            }
           : undefined,
       forcePathStyle: this.config.forcePathStyle,
     })

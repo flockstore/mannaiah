@@ -65,6 +65,51 @@ describe('Assets Integration (e2e)', () => {
     })
   })
 
+  describe('Pagination', () => {
+    beforeAll(async () => {
+      // Create a few assets for pagination testing
+      const file = Buffer.from('fake image content')
+      for (let i = 0; i < 5; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        await request(app.getHttpServer())
+          .post('/assets')
+          .attach('file', file, `page-test-${i}.jpg`)
+          .expect(201)
+      }
+    })
+
+    it('should return paginated results', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const res = await request(app.getHttpServer())
+        .get('/assets')
+        .query({ page: 1, limit: 2 })
+        .expect(200)
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(res.body.data).toHaveLength(2)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(res.body.meta.page).toBe(1)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(res.body.meta.limit).toBe(2)
+      // Total might be >= 5 depending on other tests
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(res.body.meta.total).toBeGreaterThanOrEqual(5)
+    })
+
+    it('should return next page', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const res = await request(app.getHttpServer())
+        .get('/assets')
+        .query({ page: 2, limit: 2 })
+        .expect(200)
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(res.body.data).toHaveLength(2)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      expect(res.body.meta.page).toBe(2)
+    })
+  })
+
   describe('Validation', () => {
     it('should fail if no file attached', async () => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
