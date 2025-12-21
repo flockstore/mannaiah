@@ -23,6 +23,7 @@ The application is built using NestJS Modules. The `AppModule` imports feature m
 -   **MongoDB**: Used as the primary database.
 -   **Mongoose**: Used as the ODM (Object Data Modeling) library.
 -   **Schema**: Schemas are defined within their respective feature modules (e.g., `contacts/schemas`).
+    -   Some modules (Contacts, Products, Assets) use `UUID` strings for `_id` instead of the default `ObjectId`.
 
 ### Authentication & Authorization
 

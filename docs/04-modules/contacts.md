@@ -6,6 +6,7 @@ The `ContactsModule` is responsible for managing customer data within the applic
 
 -   **CRUD Operations**: Create, Read, Update, and Delete contacts.
 -   **Schema**:
+    -   `_id` (string, UUID): Unique identifier.
     -   `firstName` (string)
     -   `lastName` (string)
     -   `email` (string, unique)

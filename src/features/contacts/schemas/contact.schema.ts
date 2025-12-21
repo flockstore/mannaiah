@@ -1,4 +1,5 @@
 import { Schema } from 'mongoose'
+import { randomUUID } from 'crypto'
 import { ContactDocument, DocumentType } from '../interfaces/contact.interface'
 import { softDeletePlugin } from '../../../core/mongo/plugins/soft-delete.plugin'
 import { timestampPlugin } from '../../../core/mongo/plugins/timestamp.plugin'
@@ -8,6 +9,10 @@ import { timestampPlugin } from '../../../core/mongo/plugins/timestamp.plugin'
  */
 export const ContactSchema = new Schema<ContactDocument>(
   {
+    _id: {
+      type: String,
+      default: randomUUID,
+    },
     documentType: {
       type: String,
       enum: Object.values(DocumentType),

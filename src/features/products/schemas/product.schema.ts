@@ -1,5 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
-import { Document } from 'mongoose'
+import { HydratedDocument } from 'mongoose'
+import { randomUUID } from 'crypto'
+
+export type ProductDocument = HydratedDocument<Product>
 
 /**
  * Represents an image in the product gallery.
@@ -72,7 +75,13 @@ export const ProductDatasheetSchema =
  * Main Product Schema.
  */
 @Schema({ timestamps: true })
-export class Product extends Document {
+export class Product {
+  /**
+   * Unique identifier for the product (UUID).
+   */
+  @Prop({ default: randomUUID })
+  _id: string
+
   /**
    * Stock Keeping Unit - Unique identifier for the product.
    */
