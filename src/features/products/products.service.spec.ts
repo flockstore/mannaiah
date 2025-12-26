@@ -122,6 +122,27 @@ describe('ProductsService', () => {
       expect(result).toEqual(updatedProduct)
     })
 
+    it('should fully replace datasheets array on update', async () => {
+      // Scenario: Existing had [A, B], updating with [A] -> Result should be [A] passed to repo
+      const dto = {
+        datasheets: [
+          { realm: 'default', name: 'Updated Product' }
+        ]
+      }
+      const updatedProduct = {
+        sku: 'SKU1',
+        datasheets: dto.datasheets
+      }
+
+      mockProductsRepository.update.mockReturnValue(of(updatedProduct))
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await service.update('id', dto as any)
+
+      // Verify repository is called with the exact array, implying replacement logic in repo
+      expect(mockProductsRepository.update).toHaveBeenCalledWith('id', dto)
+    })
+
     it('should throw NotFoundException if not found', async () => {
       mockProductsRepository.update.mockReturnValue(of(null))
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

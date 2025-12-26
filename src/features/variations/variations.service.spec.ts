@@ -87,6 +87,19 @@ describe('VariationsService', () => {
       expect(result).toEqual(updatedVariation)
     })
 
+    it('should ignore definition update', async () => {
+      const dto = { name: 'New Name', definition: 'COLOR' } as any
+      const updatedVariation = { _id: 'uuid', name: 'New Name', definition: 'SIZE' } // Keeps old def
+      mockVariationsRepository.update.mockReturnValue(of(updatedVariation))
+
+      await service.update('uuid', dto)
+
+      // Expect definition to be removed from the call
+      expect(mockVariationsRepository.update).toHaveBeenCalledWith('uuid', {
+        name: 'New Name',
+      })
+    })
+
     it('should throw NotFoundException if update target not found', async () => {
       mockVariationsRepository.update.mockReturnValue(of(null))
       await expect(service.update('uuid', { name: 'test' })).rejects.toThrow(

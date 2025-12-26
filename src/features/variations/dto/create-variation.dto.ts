@@ -44,14 +44,6 @@ export class UpdateVariationDto {
   name?: string
 
   /**
-   * Type definition of the variation.
-   */
-  @ApiProperty({ enum: VariationDefinition, required: false })
-  @IsEnum(VariationDefinition)
-  @IsOptional()
-  definition?: VariationDefinition
-
-  /**
    * Value of the variation.
    */
   @ApiProperty({ required: false })

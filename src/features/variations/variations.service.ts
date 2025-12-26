@@ -10,7 +10,7 @@ import { randomUUID } from 'crypto'
 
 @Injectable()
 export class VariationsService {
-  constructor(private readonly variationsRepository: VariationsRepository) {}
+  constructor(private readonly variationsRepository: VariationsRepository) { }
 
   /**
    * Creates a new variation.
@@ -65,6 +65,11 @@ export class VariationsService {
     id: string,
     updateVariationDto: UpdateVariationDto,
   ): Promise<Variation> {
+    // Ensure definition cannot be updated
+    if ('definition' in updateVariationDto) {
+      delete (updateVariationDto as any).definition
+    }
+
     const variation = await lastValueFrom(
       this.variationsRepository.update(id, updateVariationDto),
     )
