@@ -10,7 +10,7 @@ import { randomUUID } from 'crypto'
 
 @Injectable()
 export class VariationsService {
-  constructor(private readonly variationsRepository: VariationsRepository) { }
+  constructor(private readonly variationsRepository: VariationsRepository) {}
 
   /**
    * Creates a new variation.

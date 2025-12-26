@@ -89,7 +89,11 @@ describe('VariationsService', () => {
 
     it('should ignore definition update', async () => {
       const dto = { name: 'New Name', definition: 'COLOR' } as any
-      const updatedVariation = { _id: 'uuid', name: 'New Name', definition: 'SIZE' } // Keeps old def
+      const updatedVariation = {
+        _id: 'uuid',
+        name: 'New Name',
+        definition: 'SIZE',
+      } // Keeps old def
       mockVariationsRepository.update.mockReturnValue(of(updatedVariation))
 
       await service.update('uuid', dto)

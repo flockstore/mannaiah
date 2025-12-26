@@ -10,6 +10,8 @@ import {
   Param,
   Delete,
   Query,
+  Patch,
+  Body,
 } from '@nestjs/common'
 import { AssetsService } from './assets.service'
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
@@ -28,11 +30,12 @@ import { map } from 'rxjs'
 
 import { Asset } from './schemas/asset.schema'
 import { PaginatedAssetResponse } from './dto/paginated-asset-response.dto'
+import { UpdateAssetDto } from './dto/update-asset.dto'
 
 @ApiTags('assets')
 @Controller('assets')
 export class AssetsController {
-  constructor(private readonly assetsService: AssetsService) {}
+  constructor(private readonly assetsService: AssetsService) { }
 
   /**
    * Upload a new file asset.
@@ -54,6 +57,11 @@ export class AssetsController {
         file: {
           type: 'string',
           format: 'binary',
+        },
+        name: {
+          type: 'string',
+          description: 'Optional custom name for the asset',
+          nullable: true,
         },
       },
     },
@@ -82,8 +90,9 @@ export class AssetsController {
       }),
     )
     file: Express.Multer.File,
+    @Body('name') name?: string,
   ) {
-    return this.assetsService.create(file)
+    return this.assetsService.create(file, name)
   }
 
   /**
@@ -140,6 +149,35 @@ export class AssetsController {
   @ApiResponse({ status: 404, description: 'Asset not found.' })
   findOne(@Param('id') id: string) {
     return this.assetsService.findOne(id)
+  }
+
+  /**
+   * Update an asset (e.g., rename).
+   * Requires 'assets:update' permission.
+   *
+   * @param id - Asset ID.
+   * @param updateAssetDto - Data to update.
+   * @returns The updated asset.
+   */
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('assets:update')
+  @ApiOperation({ summary: 'Update an asset' })
+  @ApiParam({ name: 'id', description: 'Asset ID' })
+  @ApiBody({ type: UpdateAssetDto })
+  @ApiResponse({
+    status: 200,
+    description: 'The asset has been successfully updated.',
+    type: Asset,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions.',
+  })
+  @ApiResponse({ status: 404, description: 'Asset not found.' })
+  update(@Param('id') id: string, @Body() updateAssetDto: UpdateAssetDto) {
+    return this.assetsService.update(id, updateAssetDto)
   }
 
   /**

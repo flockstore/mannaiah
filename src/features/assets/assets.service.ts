@@ -11,14 +11,18 @@ export class AssetsService {
   constructor(
     private readonly assetsRepository: AssetsRepository,
     private readonly storageService: StorageService,
-  ) {}
+  ) { }
 
   /**
    * Uploads a file to S3 and creates an asset record.
    * @param file - The file to upload.
+   * @param customName - Optional custom name for the asset.
    * @returns The created asset.
    */
-  async create(file: Express.Multer.File): Promise<AssetDocument> {
+  async create(
+    file: Express.Multer.File,
+    customName?: string,
+  ): Promise<AssetDocument> {
     const key = `assets/${randomUUID()}-${file.originalname}`
 
     await this.storageService.uploadFile(key, file.buffer, file.mimetype)
@@ -27,7 +31,7 @@ export class AssetsService {
       this.assetsRepository.create({
         _id: randomUUID(),
         key,
-        originalName: file.originalname,
+        originalName: customName || file.originalname,
         mimeType: file.mimetype,
         size: file.size,
       }),
@@ -59,6 +63,25 @@ export class AssetsService {
     limit: number,
   ) {
     return this.assetsRepository.findAllPaginated(filter, page, limit)
+  }
+
+  /**
+   * Updates an asset's metadata.
+   * @param id - Asset ID.
+   * @param updateData - Data to update.
+   * @returns The updated asset.
+   */
+  async update(
+    id: string,
+    updateData: Partial<AssetDocument>,
+  ): Promise<AssetDocument> {
+    const updatedAsset = await lastValueFrom(
+      this.assetsRepository.update(id, updateData),
+    )
+    if (!updatedAsset) {
+      throw new NotFoundException(`Asset with ID ${id} not found`)
+    }
+    return updatedAsset
   }
 
   /**

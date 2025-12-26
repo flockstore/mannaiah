@@ -125,13 +125,11 @@ describe('ProductsService', () => {
     it('should fully replace datasheets array on update', async () => {
       // Scenario: Existing had [A, B], updating with [A] -> Result should be [A] passed to repo
       const dto = {
-        datasheets: [
-          { realm: 'default', name: 'Updated Product' }
-        ]
+        datasheets: [{ realm: 'default', name: 'Updated Product' }],
       }
       const updatedProduct = {
         sku: 'SKU1',
-        datasheets: dto.datasheets
+        datasheets: dto.datasheets,
       }
 
       mockProductsRepository.update.mockReturnValue(of(updatedProduct))
