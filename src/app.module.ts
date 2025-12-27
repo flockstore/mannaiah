@@ -8,6 +8,7 @@ import { StatusModule } from './features/status/status.module'
 import { ProductsModule } from './features/products/products.module'
 import { AssetsModule } from './features/assets/assets.module'
 import { VariationsModule } from './features/variations/variations.module'
+import { FalabellaModule } from './features/falabella/falabella.module'
 
 @Module({
   imports: [
@@ -20,8 +21,9 @@ import { VariationsModule } from './features/variations/variations.module'
     ProductsModule,
     AssetsModule,
     VariationsModule,
+    FalabellaModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

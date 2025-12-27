@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsString } from 'class-validator'
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 /**
  * Environment variables for the application core.
@@ -41,4 +41,7 @@ export class CoreEnvironmentVariables {
    */
   @IsString()
   LOGTO_AUDIENCE: string
+
+
 }
+
