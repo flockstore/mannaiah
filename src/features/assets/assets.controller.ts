@@ -35,7 +35,7 @@ import { UpdateAssetDto } from './dto/update-asset.dto'
 @ApiTags('assets')
 @Controller('assets')
 export class AssetsController {
-  constructor(private readonly assetsService: AssetsService) { }
+  constructor(private readonly assetsService: AssetsService) {}
 
   /**
    * Upload a new file asset.

@@ -24,7 +24,7 @@ export class ProductsService {
     private readonly productsRepository: ProductsRepository,
     private assetsService: AssetsService,
     private variationsService: VariationsService,
-  ) {}
+  ) { }
 
   /**
    * Validates the product gallery.
@@ -80,6 +80,7 @@ export class ProductsService {
   /**
    * Creates a new product.
    * Validates gallery and variations before creation.
+   * If variants are provided, defaults their SKU to the main product SKU if missing.
    *
    * @param createProductDto - The product data.
    * @returns The created product.
@@ -91,6 +92,18 @@ export class ProductsService {
     }
     if (createProductDto.variations) {
       await this.validateVariations(createProductDto.variations)
+    }
+    if (createProductDto.variants) {
+      const variantIds = createProductDto.variants.flatMap(
+        (v) => v.variationIds,
+      )
+      await this.validateVariations(variantIds)
+
+      createProductDto.variants.forEach((v) => {
+        if (!v.sku) {
+          v.sku = createProductDto.sku
+        }
+      })
     }
 
     try {
@@ -132,6 +145,7 @@ export class ProductsService {
   /**
    * Updates a product.
    * Validates gallery and variations if they are being updated.
+   * If variants are provided, defaults their SKU to the main product SKU if missing (requires fetching current product).
    *
    * @param id - Product ID.
    * @param updateProductDto - Data to update.
@@ -147,6 +161,21 @@ export class ProductsService {
     }
     if (updateProductDto.variations) {
       await this.validateVariations(updateProductDto.variations)
+    }
+
+    if (updateProductDto.variants) {
+      const variantIds = updateProductDto.variants.flatMap(
+        (v) => v.variationIds,
+      )
+      await this.validateVariations(variantIds)
+
+      const currentProduct = await this.findOne(id)
+
+      updateProductDto.variants.forEach((v) => {
+        if (!v.sku) {
+          v.sku = currentProduct.sku
+        }
+      })
     }
 
     const updatedProduct = await lastValueFrom(

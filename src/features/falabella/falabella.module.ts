@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { validateUtil } from '../../core/config/validate.util'
@@ -11,13 +10,12 @@ import { FalabellaService } from './falabella.service'
  * Provides Falabella Seller Center API integration
  */
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-            validate: (config) =>
-                validateUtil(FalabellaEnvironmentVariables, config),
-        }),
-    ],
-    providers: [FalabellaConfigService, FalabellaService],
-    exports: [FalabellaConfigService, FalabellaService],
+  imports: [
+    ConfigModule.forRoot({
+      validate: (config) => validateUtil(FalabellaEnvironmentVariables, config),
+    }),
+  ],
+  providers: [FalabellaConfigService, FalabellaService],
+  exports: [FalabellaConfigService, FalabellaService],
 })
-export class FalabellaModule { }
+export class FalabellaModule {}

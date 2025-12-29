@@ -92,6 +92,34 @@ export const ProductDatasheetSchema =
 /**
  * Main Product Schema.
  */
+
+@Schema()
+export class ProductVariant {
+  /**
+   * List of variation IDs defining this variant (e.g., [ColorId, SizeId]).
+   */
+  @ApiProperty({ description: 'List of variation IDs', type: [String] })
+  @Prop({ type: [String], required: true })
+  variationIds: string[]
+
+  /**
+   * Specific SKU for this variant.
+   * If not provided, it defaults to the main product SKU.
+   */
+  @ApiProperty({
+    description:
+      'Variant SKU. If not provided, it defaults to the main product SKU.',
+    required: false,
+  })
+  @Prop()
+  sku?: string
+}
+
+export const ProductVariantSchema = SchemaFactory.createForClass(ProductVariant)
+
+/**
+ * Main Product Schema.
+ */
 @Schema({ timestamps: true })
 export class Product {
   /**
@@ -128,6 +156,13 @@ export class Product {
   @ApiProperty({ description: 'List of variation IDs', type: [String] })
   @Prop({ type: [String], default: [] })
   variations: string[]
+
+  /**
+   * List of product variants with specific SKUs.
+   */
+  @ApiProperty({ description: 'Product variants', type: [ProductVariant] })
+  @Prop({ type: [ProductVariantSchema], default: [] })
+  variants: ProductVariant[]
 
   @ApiProperty({ description: 'Creation timestamp' })
   @Prop()

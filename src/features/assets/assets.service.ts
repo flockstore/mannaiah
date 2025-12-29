@@ -11,7 +11,7 @@ export class AssetsService {
   constructor(
     private readonly assetsRepository: AssetsRepository,
     private readonly storageService: StorageService,
-  ) { }
+  ) {}
 
   /**
    * Uploads a file to S3 and creates an asset record.

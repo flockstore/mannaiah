@@ -26,4 +26,4 @@ import { FalabellaModule } from './features/falabella/falabella.module'
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

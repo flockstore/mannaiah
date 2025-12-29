@@ -61,6 +61,16 @@ describe('Product Integration (e2e)', () => {
           },
         ],
         variations: [variationId],
+        variants: [
+          {
+            variationIds: [variationId],
+            sku: 'TEST_VARIANT_SKU',
+          },
+          {
+            variationIds: [variationId],
+            // Missing SKU, should fallback to TEST_SKU_FULL
+          },
+        ],
         datasheets: [
           {
             realm: 'default',
@@ -75,5 +85,8 @@ describe('Product Integration (e2e)', () => {
     expect(body.sku).toBe('TEST_SKU_FULL')
     expect(body.gallery[0].assetId).toBe(assetId)
     expect(body.variations[0]).toBe(variationId)
+    expect(body.variants).toHaveLength(2)
+    expect(body.variants[0].sku).toBe('TEST_VARIANT_SKU')
+    expect(body.variants[1].sku).toBe('TEST_SKU_FULL')
   })
 })

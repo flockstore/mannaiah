@@ -87,6 +87,32 @@ describe('ProductsService', () => {
         BadRequestException,
       )
     })
+
+    it('should fallback to main SKU if variant SKU is missing on create', async () => {
+      const dto = {
+        sku: 'MAIN_SKU',
+        variants: [
+          { variationIds: ['v1'], sku: 'VAR_SKU' },
+          { variationIds: ['v2'] }, // Missing SKU
+        ],
+      }
+      const expectedDto = {
+        sku: 'MAIN_SKU',
+        variants: [
+          { variationIds: ['v1'], sku: 'VAR_SKU' },
+          { variationIds: ['v2'], sku: 'MAIN_SKU' },
+        ],
+      }
+
+      mockProductsRepository.create.mockReturnValue(of(expectedDto))
+      await service.create(dto as any)
+
+      expect(mockProductsRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variants: expectedDto.variants,
+        }),
+      )
+    })
   })
 
   describe('findAll', () => {
@@ -139,6 +165,35 @@ describe('ProductsService', () => {
 
       // Verify repository is called with the exact array, implying replacement logic in repo
       expect(mockProductsRepository.update).toHaveBeenCalledWith('id', dto)
+    })
+
+    it('should fallback to main SKU if variant SKU is missing on update', async () => {
+      const dto = {
+        variants: [
+          { variationIds: ['v1'], sku: 'VAR_SKU' },
+          { variationIds: ['v2'] }, // Missing SKU
+        ],
+      }
+      const existingProduct = { sku: 'MAIN_SKU' }
+      const expectedVariants = [
+        { variationIds: ['v1'], sku: 'VAR_SKU' },
+        { variationIds: ['v2'], sku: 'MAIN_SKU' },
+      ]
+
+      mockProductsRepository.findById.mockReturnValue(of(existingProduct))
+      mockProductsRepository.update.mockReturnValue(
+        of({ ...existingProduct, variants: expectedVariants }),
+      )
+
+      await service.update('id', dto as any)
+
+      expect(mockProductsRepository.findById).toHaveBeenCalledWith('id')
+      expect(mockProductsRepository.update).toHaveBeenCalledWith(
+        'id',
+        expect.objectContaining({
+          variants: expectedVariants,
+        }),
+      )
     })
 
     it('should throw NotFoundException if not found', async () => {

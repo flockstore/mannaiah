@@ -90,6 +90,32 @@ export class DatasheetDto {
 }
 
 /**
+ * DTO for a product variant.
+ */
+export class ProductVariantDto {
+  /**
+   * List of variation IDs defining this variant.
+   */
+  @ApiProperty({ description: 'List of variation IDs', type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty()
+  variationIds: string[]
+
+  /**
+   * Specific SKU for this variant.
+   */
+  @ApiProperty({
+    description:
+      'Variant SKU. If not provided, it defaults to the main product SKU.',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  sku?: string
+}
+
+/**
  * DTO for creating a product.
  */
 export class CreateProductDto {
@@ -118,14 +144,6 @@ export class CreateProductDto {
   /**
    * Datasheets.
    */
-  @ApiProperty({
-    description: 'Datasheets',
-    required: false,
-    type: [DatasheetDto],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => DatasheetDto)
   @IsOptional()
   datasheets?: DatasheetDto[]
 
@@ -141,6 +159,20 @@ export class CreateProductDto {
   @IsString({ each: true })
   @IsOptional()
   variations?: string[]
+
+  /**
+   * Product Variants (Combinations with SKUs).
+   */
+  @ApiProperty({
+    description: 'Product Variants',
+    required: false,
+    type: [ProductVariantDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantDto)
+  @IsOptional()
+  variants?: ProductVariantDto[]
 }
 
 /**
@@ -187,4 +219,18 @@ export class UpdateProductDto {
   @IsString({ each: true })
   @IsOptional()
   variations?: string[]
+
+  /**
+   * Product Variants (Combinations with SKUs).
+   */
+  @ApiProperty({
+    description: 'Product Variants',
+    required: false,
+    type: [ProductVariantDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantDto)
+  @IsOptional()
+  variants?: ProductVariantDto[]
 }

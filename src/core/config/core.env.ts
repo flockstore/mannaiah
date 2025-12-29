@@ -41,7 +41,4 @@ export class CoreEnvironmentVariables {
    */
   @IsString()
   LOGTO_AUDIENCE: string
-
-
 }
-
