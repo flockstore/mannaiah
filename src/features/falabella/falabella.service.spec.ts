@@ -4,7 +4,6 @@ import { FalabellaConfigService } from './config/falabella-config.service'
 
 describe('FalabellaService', () => {
   let service: FalabellaService
-  let configService: FalabellaConfigService
 
   const mockConfigService = {
     isConfigured: jest.fn(),
@@ -24,7 +23,7 @@ describe('FalabellaService', () => {
     }).compile()
 
     service = module.get<FalabellaService>(FalabellaService)
-    configService = module.get<FalabellaConfigService>(FalabellaConfigService)
+    // configService = module.get<FalabellaConfigService>(FalabellaConfigService)
 
     // Reset mocks
     jest.clearAllMocks()

@@ -88,6 +88,7 @@ describe('VariationsService', () => {
     })
 
     it('should ignore definition update', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const dto = { name: 'New Name', definition: 'COLOR' } as any
       const updatedVariation = {
         _id: 'uuid',

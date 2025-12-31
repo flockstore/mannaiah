@@ -26,6 +26,8 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
    * @param page - Page number (1-based).
    * @param limit - Items per page.
    * @param options - Query options.
+   * @param sort - Sort criteria.
+   * @param excludeIds - List of IDs to exclude.
    * @returns Observable emitting paginated results.
    */
   findAllPaginated(
@@ -33,6 +35,8 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
     page: number = 1,
     limit: number = 10,
     options?: QueryOptions,
+    sort?: string | Record<string, 1 | -1>,
+    excludeIds?: string[],
   ): Observable<{
     data: ContactDocument[]
     total: number
@@ -44,6 +48,13 @@ export class ContactRepository extends BaseRepository<ContactDocument> {
     }
 
     // Call parent implementation with preprocessed filter
-    return super.findAllPaginated(filter, page, limit, options)
+    return super.findAllPaginated(
+      filter,
+      page,
+      limit,
+      options,
+      sort,
+      excludeIds,
+    )
   }
 }

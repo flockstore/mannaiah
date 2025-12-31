@@ -67,6 +67,7 @@ export class VariationsService {
   ): Promise<Variation> {
     // Ensure definition cannot be updated
     if ('definition' in updateVariationDto) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       delete (updateVariationDto as any).definition
     }
 

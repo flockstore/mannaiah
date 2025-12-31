@@ -131,6 +131,8 @@ export class BaseService<T extends BaseDocument> {
    * @param page - Page number (1-based)
    * @param limit - Items per page
    * @param options - Query options (e.g., withDeleted)
+   * @param sort - Sort criteria
+   * @param excludeIds - List of IDs to exclude
    * @returns Observable emitting paginated results with metadata
    */
   findAllPaginated(
@@ -138,7 +140,16 @@ export class BaseService<T extends BaseDocument> {
     page: number = 1,
     limit: number = 10,
     options?: QueryOptions,
+    sort?: string | Record<string, 1 | -1>,
+    excludeIds?: string[],
   ): Observable<{ data: T[]; total: number; page: number; limit: number }> {
-    return this.repository.findAllPaginated(filter, page, limit, options)
+    return this.repository.findAllPaginated(
+      filter,
+      page,
+      limit,
+      options,
+      sort,
+      excludeIds,
+    )
   }
 }

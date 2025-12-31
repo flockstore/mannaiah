@@ -76,6 +76,8 @@ describe('ContactService', () => {
             1,
             10,
             undefined,
+            undefined,
+            undefined,
           )
           done()
         },

@@ -91,12 +91,11 @@ describe('Contacts Integration (e2e)', () => {
       // But subsequent get should fail or show isDeleted=true if logic dictates.
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const res = await request(app.getHttpServer())
+      await request(app.getHttpServer())
         .get(`/contacts/${createdContactId}`)
-        .expect(200) // If it returns the contact even if deleted, check isDeleted flag
+        .expect(404) // Expect 404 Not Found since it's soft deleted
 
-      const body = res.body as ContactDocument
-      expect(body.isDeleted).toBe(true)
+      // Verify body message or similar (optional)
     })
   })
 
@@ -131,6 +130,94 @@ describe('Contacts Integration (e2e)', () => {
         .post('/contacts')
         .send({ ...dto, email: 'dup2@test.com' })
         .expect(409)
+    })
+  })
+
+  describe('Pagination Features', () => {
+    let id1: string, id2: string, id3: string
+
+    beforeAll(async () => {
+      // Create test data
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const c1 = await request(app.getHttpServer()).post('/contacts').send({
+        legalName: 'A Company',
+        documentType: DocumentType.NIT,
+        documentNumber: '111',
+        email: 'a@test.com',
+      })
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      id1 = c1.body._id as string
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const c2 = await request(app.getHttpServer()).post('/contacts').send({
+        legalName: 'B Company',
+        documentType: DocumentType.NIT,
+        documentNumber: '222',
+        email: 'b@test.com',
+      })
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      id2 = c2.body._id as string
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const c3 = await request(app.getHttpServer()).post('/contacts').send({
+        legalName: 'C Company',
+        documentType: DocumentType.NIT,
+        documentNumber: '333',
+        email: 'c@test.com',
+      })
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      id3 = c3.body._id as string
+    })
+
+    it('should exclude specific IDs', async () => {
+      // Exclude id2
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const res = await request(app.getHttpServer())
+        .get(`/contacts?excludeIds=${id2}`)
+        .expect(200)
+
+      const body = res.body as { data: ContactDocument[]; total: number }
+      // Should find id1 and id3, but not id2
+      const ids = body.data.map((c) => c._id)
+      expect(ids).toContain(id1)
+      expect(ids).toContain(id3)
+      expect(ids).not.toContain(id2)
+    })
+
+    it('should sort by legalName ascending', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const res = await request(app.getHttpServer())
+        .get('/contacts?orderBy=legalName&orderDir=asc&limit=100') // limit high enough to get all
+        .expect(200)
+
+      const body = res.body as { data: ContactDocument[] }
+      const names = body.data.map((c) => c.legalName).filter(Boolean)
+      // We expect at least A, B, C companies in order among others
+      const aIndex = names.indexOf('A Company')
+      const bIndex = names.indexOf('B Company')
+      const cIndex = names.indexOf('C Company')
+
+      expect(aIndex).toBeGreaterThan(-1)
+      expect(bIndex).toBeGreaterThan(aIndex)
+      expect(cIndex).toBeGreaterThan(bIndex)
+    })
+
+    it('should sort by legalName descending', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      const res = await request(app.getHttpServer())
+        .get('/contacts?orderBy=legalName&orderDir=desc&limit=100')
+        .expect(200)
+
+      const body = res.body as { data: ContactDocument[] }
+      const names = body.data.map((c) => c.legalName).filter(Boolean)
+
+      const aIndex = names.indexOf('A Company')
+      const bIndex = names.indexOf('B Company')
+      const cIndex = names.indexOf('C Company')
+
+      expect(cIndex).toBeGreaterThan(-1)
+      expect(bIndex).toBeGreaterThan(cIndex)
+      expect(aIndex).toBeGreaterThan(bIndex)
     })
   })
 })

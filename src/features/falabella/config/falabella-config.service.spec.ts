@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { ConfigService } from '@nestjs/config'
 import { FalabellaConfigService } from './falabella-config.service'
 
 describe('FalabellaConfigService', () => {

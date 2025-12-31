@@ -69,6 +69,9 @@ export class ContactsController {
    *
    * @param page - Page number (default: 1).
    * @param limit - Items per page (default: 10).
+   * @param excludeIds - List of IDs to exclude.
+   * @param orderBy - Field to sort by.
+   * @param orderDir - Sort direction ('asc' or 'desc').
    * @param query - Additional filter query parameters.
    * @returns Paginated list of contacts.
    */
@@ -87,6 +90,25 @@ export class ContactsController {
     description: 'Items per page (default: 10)',
   })
   @ApiQuery({
+    name: 'excludeIds',
+    required: false,
+    type: String,
+    isArray: true,
+    description: 'List of IDs to exclude',
+  })
+  @ApiQuery({
+    name: 'orderBy',
+    required: false,
+    type: String,
+    description: 'Field to order by (e.g., createdAt, legalName)',
+  })
+  @ApiQuery({
+    name: 'orderDir',
+    required: false,
+    enum: ['asc', 'desc'],
+    description: 'Order direction (asc or desc)',
+  })
+  @ApiQuery({
     name: 'email',
     required: false,
     type: String,
@@ -102,17 +124,54 @@ export class ContactsController {
   findAll(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
-    @Query() query: any,
+    @Query('excludeIds') excludeIds?: string | string[],
+    @Query('orderBy') orderBy?: string,
+    @Query('orderDir') orderDir: 'asc' | 'desc' = 'asc',
+    @Query() query?: any,
   ): Observable<{
     data: ContactDocument[]
     total: number
     page: number
     limit: number
   }> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-assignment
-    const { page: _, limit: __, ...filters } = query
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    return this.contactService.findAllPaginated(filters, page, limit)
+    // Create a copy of query to modify for filters
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const filters = { ...query }
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+    delete filters.page
+    delete filters.limit
+    delete filters.excludeIds
+    delete filters.orderBy
+    delete filters.orderDir
+    /* eslint-enable @typescript-eslint/no-unsafe-member-access */
+
+    // Handle excludeIds
+    let idsToExclude: string[] = []
+    if (excludeIds) {
+      if (Array.isArray(excludeIds)) {
+        idsToExclude = excludeIds
+      } else {
+        idsToExclude = excludeIds.split(',')
+      }
+    }
+
+    // Handle Sorting
+    let sort: Record<string, 1 | -1> | undefined
+    if (orderBy) {
+      sort = { [orderBy]: orderDir === 'desc' ? -1 : 1 }
+    } else {
+      // Default sort by createdAt desc if not specified
+      sort = { createdAt: -1 }
+    }
+
+    return this.contactService.findAllPaginated(
+      filters,
+      page,
+      limit,
+      undefined, // options
+      sort,
+      idsToExclude,
+    )
   }
 
   /**

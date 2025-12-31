@@ -186,6 +186,8 @@ export class BaseRepository<T extends BaseDocument> {
    * @param page - Page number (1-based)
    * @param limit - Items per page
    * @param options - Query options (e.g., withDeleted)
+   * @param sort - Sort criteria (string or object)
+   * @param excludeIds - List of IDs to exclude
    * @returns Observable emitting paginated results with metadata
    */
   findAllPaginated(
@@ -193,8 +195,16 @@ export class BaseRepository<T extends BaseDocument> {
     page: number = 1,
     limit: number = 10,
     options?: QueryOptions,
+    sort?: string | Record<string, 1 | -1>,
+    excludeIds?: string[],
   ): Observable<{ data: T[]; total: number; page: number; limit: number }> {
     const skip = (page - 1) * limit
+
+    if (excludeIds && excludeIds.length > 0) {
+      // Reverting casting to ObjectId as we use UUID string IDs
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      ;(filter as any)._id = { $nin: excludeIds }
+    }
 
     const countPromise = this.model
       .countDocuments(filter)
@@ -204,6 +214,7 @@ export class BaseRepository<T extends BaseDocument> {
     const dataPromise = this.model
       .find(filter)
       .setOptions(options || {})
+      .sort(sort)
       .skip(skip)
       .limit(limit)
       .exec()
