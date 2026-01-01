@@ -200,21 +200,43 @@ export class BaseRepository<T extends BaseDocument> {
   ): Observable<{ data: T[]; total: number; page: number; limit: number }> {
     const skip = (page - 1) * limit
 
-    if (excludeIds && excludeIds.length > 0) {
+    // Extract excludeIds and sort from filter if not explicitly provided
+    // This handles cases where controllers pass query params directly into filter
+    const {
+      excludeIds: filterExcludeIds,
+      sort: filterSort,
+      ...rest
+    } = filter as Record<string, any>
+
+    let finalFilter = rest as FilterQuery<T>
+
+    const finalExcludeIds =
+      excludeIds ||
+      (filterExcludeIds
+        ? Array.isArray(filterExcludeIds)
+          ? (filterExcludeIds as string[])
+          : [filterExcludeIds as string]
+        : undefined)
+
+    const finalSort = sort || (filterSort as string | Record<string, 1 | -1>)
+
+    if (finalExcludeIds && finalExcludeIds.length > 0) {
+      // Create a shallow copy to allow modification if needed, though 'rest' is already a new object
+      finalFilter = { ...finalFilter }
       // Reverting casting to ObjectId as we use UUID string IDs
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      ;(filter as any)._id = { $nin: excludeIds }
+      ;(finalFilter as any)._id = { $nin: finalExcludeIds }
     }
 
     const countPromise = this.model
-      .countDocuments(filter)
+      .countDocuments(finalFilter)
       .setOptions(options || {})
       .exec()
 
     const dataPromise = this.model
-      .find(filter)
+      .find(finalFilter)
       .setOptions(options || {})
-      .sort(sort)
+      .sort(finalSort)
       .skip(skip)
       .limit(limit)
       .exec()

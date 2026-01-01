@@ -157,6 +157,32 @@ describe('AssetsService', () => {
     })
   })
 
+  describe('findAllPaginated', () => {
+    it('should forward parameters directly to repository', () => {
+      const filter = {
+        name: 'test',
+        excludeIds: ['1', '2'],
+        sort: { name: 1 },
+      }
+      const page = 1
+      const limit = 10
+
+      mockAssetsRepository.findAllPaginated.mockReturnValue(
+        of({ data: [], total: 0, page, limit }),
+      )
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      service.findAllPaginated(filter as any, page, limit)
+
+      // AssetsService simply forwards the call; BaseRepository handles logic
+      expect(mockAssetsRepository.findAllPaginated).toHaveBeenCalledWith(
+        filter,
+        page,
+        limit,
+      )
+    })
+  })
+
   describe('remove', () => {
     it('should delete file from S3 and remove record from DB', async () => {
       const assetId = randomUUID()

@@ -510,5 +510,66 @@ describe('BaseRepository', () => {
       expect(result.page).toBe(1)
       expect(result.limit).toBe(10)
     })
+
+    it('should exclude items by ID when excludeIds is provided', async () => {
+      const allDocs = await lastValueFrom(repository.findAll())
+      const idsToExclude = [
+        allDocs[0]._id.toString(),
+        allDocs[1]._id.toString(),
+      ]
+      const result = await lastValueFrom(
+        repository.findAllPaginated(
+          {},
+          1,
+          10,
+          undefined,
+          undefined,
+          idsToExclude,
+        ),
+      )
+      expect(result.data).toHaveLength(3)
+      expect(result.total).toBe(3)
+      result.data.forEach((doc) => {
+        expect(idsToExclude).not.toContain(doc._id.toString())
+      })
+    })
+
+    it('should extract excludeIds from filter if provided there', async () => {
+      const allDocs = await lastValueFrom(repository.findAll())
+      const idsToExclude = [
+        allDocs[0]._id.toString(),
+        allDocs[1]._id.toString(),
+      ]
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const filterWithExclude = {
+        excludeIds: idsToExclude,
+      } as any
+
+      const result = await lastValueFrom(
+        repository.findAllPaginated(filterWithExclude, 1, 10),
+      )
+
+      expect(result.data).toHaveLength(3)
+      expect(result.total).toBe(3)
+      result.data.forEach((doc) => {
+        expect(idsToExclude).not.toContain(doc._id.toString())
+      })
+    })
+
+    it('should sort results correctly when sort is provided in filter', async () => {
+      // Ensure values are unique for sorting test: 1, 2, 3, 4, 5
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const filterWithSort = {
+        sort: { value: -1 },
+      } as any
+
+      const result = await lastValueFrom(
+        repository.findAllPaginated(filterWithSort, 1, 10),
+      )
+
+      expect(result.data[0].value).toBe(5)
+      expect(result.data[result.data.length - 1].value).toBe(1)
+    })
   })
 })
