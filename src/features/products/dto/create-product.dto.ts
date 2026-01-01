@@ -44,12 +44,17 @@ export class GalleryItemDto {
   excludedRealms?: string[]
 
   /**
-   * Linked variation ID.
+   * Linked variation IDs.
    */
-  @ApiProperty({ description: 'Linked variation ID', required: false })
-  @IsString()
+  @ApiProperty({
+    description: 'Linked variation IDs',
+    required: false,
+    type: [String],
+  })
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  variationId?: string
+  variationIds?: string[]
 }
 
 /**

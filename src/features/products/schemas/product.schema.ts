@@ -42,11 +42,15 @@ export class ProductGalleryItem {
   excludedRealms: string[]
 
   /**
-   * Optional ID to link this image to a specific variation.
+   * Optional IDs to link this image to specific variations.
    */
-  @ApiProperty({ description: 'Linked variation ID', required: false })
-  @Prop()
-  variationId?: string
+  @ApiProperty({
+    description: 'Linked variation IDs',
+    required: false,
+    type: [String],
+  })
+  @Prop({ type: [String], default: [] })
+  variationIds?: string[]
 }
 
 export const ProductGalleryItemSchema =

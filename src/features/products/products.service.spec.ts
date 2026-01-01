@@ -88,6 +88,18 @@ describe('ProductsService', () => {
       )
     })
 
+    it('should fail if gallery variation not found', async () => {
+      mockVariationsService.findOne.mockRejectedValueOnce(new NotFoundException())
+      const dto = {
+        sku: 'SKU_VAR_FAIL',
+        gallery: [{ assetId: 'a1', variationIds: ['bad_var'] }],
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await expect(service.create(dto as any)).rejects.toThrow(
+        BadRequestException,
+      )
+    })
+
     it('should fallback to main SKU if variant SKU is missing on create', async () => {
       const dto = {
         sku: 'MAIN_SKU',

@@ -24,7 +24,7 @@ export class ProductsService {
     private readonly productsRepository: ProductsRepository,
     private assetsService: AssetsService,
     private variationsService: VariationsService,
-  ) {}
+  ) { }
 
   /**
    * Validates the product gallery.
@@ -49,13 +49,15 @@ export class ProductsService {
         throw new BadRequestException(`Asset with ID ${item.assetId} not found`)
       }
 
-      if (item.variationId) {
-        try {
-          await this.variationsService.findOne(item.variationId)
-        } catch {
-          throw new BadRequestException(
-            `Variation with ID ${item.variationId} not found`,
-          )
+      if (item.variationIds && item.variationIds.length > 0) {
+        for (const variationId of item.variationIds) {
+          try {
+            await this.variationsService.findOne(variationId)
+          } catch {
+            throw new BadRequestException(
+              `Variation with ID ${variationId} not found`,
+            )
+          }
         }
       }
     }
