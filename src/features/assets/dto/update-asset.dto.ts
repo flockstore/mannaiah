@@ -8,5 +8,7 @@ export class UpdateAssetDto {
   })
   @IsString()
   @IsNotEmpty()
-  originalName: string
+  @IsString()
+  @IsNotEmpty()
+  name: string
 }

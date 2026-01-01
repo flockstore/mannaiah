@@ -111,7 +111,8 @@ describe('AssetsService', () => {
 
       expect(mockAssetsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          originalName: customName,
+          originalName: file.originalname,
+          name: customName,
         }),
       )
       expect(result).toEqual(createdAsset)

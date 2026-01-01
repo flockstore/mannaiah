@@ -31,7 +31,8 @@ export class AssetsService {
       this.assetsRepository.create({
         _id: randomUUID(),
         key,
-        originalName: customName || file.originalname,
+        originalName: file.originalname,
+        name: customName || file.originalname,
         mimeType: file.mimetype,
         size: file.size,
       }),

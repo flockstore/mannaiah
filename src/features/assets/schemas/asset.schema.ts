@@ -31,6 +31,17 @@ export class Asset {
   key: string
 
   /**
+   * Custom name for the asset.
+   */
+  @ApiProperty({
+    description: 'Custom name',
+    example: 'My Image',
+    required: false,
+  })
+  @Prop()
+  name?: string
+
+  /**
    * Original filename.
    */
   @ApiProperty({ description: 'Original filename', example: 'image.png' })
