@@ -110,13 +110,15 @@ export class FalabellaSyncService {
             throw new Error(`No datasheet found for product ${product.sku}`)
         }
 
+        const { brand, category, ...otherAttributes } = falabellaData.attributes || {}
+
         return {
             SellerSku: product.sku,
             Name: falabellaData.name,
             Description: falabellaData.description,
-            Brand: falabellaData.attributes?.brand || 'Generic',
-            PrimaryCategory: falabellaData.attributes?.category,
-            ...falabellaData.attributes,
+            Brand: brand || 'Generic',
+            PrimaryCategory: category,
+            ...otherAttributes,
             ParentSku: isParent ? undefined : undefined,
         }
     }
@@ -126,14 +128,16 @@ export class FalabellaSyncService {
             parent.datasheets.find((d) => d.realm === 'falabella') ||
             parent.datasheets[0]
 
+        const { brand, category, ...otherAttributes } = falabellaData.attributes || {}
+
         return {
             SellerSku: variant.sku || parent.sku,
             ParentSku: parent.sku,
             Name: `${falabellaData.name} - ${variant.sku}`,
             Description: falabellaData.description,
-            Brand: falabellaData.attributes?.brand || 'Generic',
-            PrimaryCategory: falabellaData.attributes?.category,
-            ...falabellaData.attributes,
+            Brand: brand || 'Generic',
+            PrimaryCategory: category,
+            ...otherAttributes,
         }
     }
 }
