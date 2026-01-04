@@ -11,7 +11,7 @@ export class AssetsService {
   constructor(
     private readonly assetsRepository: AssetsRepository,
     private readonly storageService: StorageService,
-  ) {}
+  ) { }
 
   /**
    * Uploads a file to S3 and creates an asset record.
@@ -101,5 +101,14 @@ export class AssetsService {
 
     // Soft delete from DB
     await lastValueFrom(this.assetsRepository.softDelete(id))
+  }
+  /**
+   * Generates a public URL for an asset.
+   * @param id - Asset ID.
+   * @returns The public URL.
+   */
+  async getPublicUrl(id: string): Promise<string> {
+    const asset = await this.findOne(id)
+    return this.storageService.getPublicUrl(asset.key)
   }
 }

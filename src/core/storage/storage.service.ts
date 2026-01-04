@@ -50,9 +50,9 @@ export class StorageService {
       credentials:
         accessKeyId && secretAccessKey
           ? {
-              accessKeyId,
-              secretAccessKey,
-            }
+            accessKeyId,
+            secretAccessKey,
+          }
           : undefined,
       forcePathStyle: this.config.forcePathStyle,
     })
@@ -131,6 +131,34 @@ export class StorageService {
     } catch (error) {
       this.logger.error(`Failed to delete file: ${key}`, error)
       throw error
+    }
+  }
+  /**
+   * Generates a public URL for a file.
+   * Note: This assumes the bucket/object IS public or accessible.
+   * @param key - The key of the file.
+   * @returns The public URL.
+   */
+  getPublicUrl(key: string): string {
+    if (!this.config.isEnabled) {
+      throw new Error('Storage is disabled')
+    }
+
+    // Clean endpoint of potential trailing slash
+    const endpoint = this.config.endpoint!.replace(/\/$/, '')
+    const bucket = this.config.bucketName!
+
+    if (this.config.forcePathStyle) {
+      // Path style: https://endpoint/bucket/key
+      return `${endpoint}/${bucket}/${key}`
+    } else {
+      // Virtual-hosted style: https://bucket.endpoint/key
+      // Need to handle protocol if present in endpoint
+      const protocolMatch = endpoint.match(/^(https?:\/\/)(.*)$/)
+      if (protocolMatch) {
+        return `${protocolMatch[1]}${bucket}.${protocolMatch[2]}/${key}`
+      }
+      return `https://${bucket}.${endpoint}/${key}`
     }
   }
 }
