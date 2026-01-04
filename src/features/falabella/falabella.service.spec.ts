@@ -97,9 +97,9 @@ describe('FalabellaService', () => {
   describe('userAgent', () => {
     it('should construct user agent correctly', () => {
       // FALABELLA_SELLER_ID/TECNOLOGÍA_USADA/VERSIÓN_TECNOLOGÍA/TIPO_INTEGRACIÓN/CÓDIGO_UNIDAD_DE_NEGOCIO
-      // test-seller-id/NodeJS/<version>/PROPIA/FACL
+      // test-seller-id/Node/<version>/PROPIA/FACL
       const ua = service.userAgent
-      expect(ua).toContain('test-seller-id/NodeJS/')
+      expect(ua).toContain('test-seller-id/Node/')
       expect(ua).toContain('/PROPIA/FACL')
     })
   })

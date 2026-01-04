@@ -55,8 +55,8 @@ export class FalabellaService {
    */
   get userAgent(): string {
     const sellerId = this.config.sellerId || 'UNKNOWN_SELLER'
-    const tech = 'NodeJS'
-    const version = process.version.replace('v', '') // e.g. 18.20.4
+    const tech = 'Node' // Changed from NodeJS to Node as per documentation examples
+    const version = process.version.replace('v', '')
     const integration = 'PROPIA'
     const country = this.config.country
 
@@ -167,6 +167,10 @@ export class FalabellaService {
 
   async getBrands(): Promise<any> {
     return this.sendRequest('GetBrands')
+  }
+
+  async getSeller(): Promise<any> {
+    return this.sendRequest('GetSellerByUser')
   }
 
   async getCategories(): Promise<any> {
