@@ -18,4 +18,19 @@ export class FalabellaEnvironmentVariables {
   @IsOptional()
   @IsString()
   FALABELLA_API_KEY?: string
+
+  /**
+   * Falabella Seller ID (Optional, inferred from USER_ID if missing, though typically different).
+   */
+  @IsOptional()
+  @IsString()
+  FALABELLA_SELLER_ID?: string
+
+  /**
+   * Falabella Country Code. (e.g., FACO, FACL, FAPE).
+   * Defaults to FACO if not provided.
+   */
+  @IsOptional()
+  @IsString()
+  FALABELLA_COUNTRY?: string
 }

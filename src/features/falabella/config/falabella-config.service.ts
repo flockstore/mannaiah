@@ -43,4 +43,20 @@ export class FalabellaConfigService extends NestConfigService<FalabellaEnvironme
   get apiKey(): string | undefined {
     return this.get('FALABELLA_API_KEY', { infer: true })
   }
+
+  /**
+   * Gets the Falabella Seller ID.
+   * @returns The seller ID or undefined.
+   */
+  get sellerId(): string | undefined {
+    return this.get('FALABELLA_SELLER_ID', { infer: true })
+  }
+
+  /**
+   * Gets the Falabella Country Code.
+   * @returns The country code or 'FACO' as default.
+   */
+  get country(): string {
+    return this.get('FALABELLA_COUNTRY', { infer: true }) || 'FACO'
+  }
 }

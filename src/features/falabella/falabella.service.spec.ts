@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { FalabellaService } from './falabella.service'
 import { FalabellaConfigService } from './config/falabella-config.service'
+import { HttpService } from '@nestjs/axios'
+import { of } from 'rxjs'
 
 describe('FalabellaService', () => {
   let service: FalabellaService
@@ -9,6 +11,13 @@ describe('FalabellaService', () => {
     isConfigured: jest.fn(),
     apiKey: 'test-api-key',
     userId: 'test-user-id',
+    sellerId: 'test-seller-id',
+    country: 'FACL',
+  }
+
+  const mockHttpService = {
+    post: jest.fn(),
+    get: jest.fn(),
   }
 
   beforeEach(async () => {
@@ -18,6 +27,10 @@ describe('FalabellaService', () => {
         {
           provide: FalabellaConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: HttpService,
+          useValue: mockHttpService,
         },
       ],
     }).compile()
@@ -79,6 +92,40 @@ describe('FalabellaService', () => {
       const result = service.testConnection()
       expect(result.success).toBe(false)
       expect(result.message).toBe('Disabled')
+    })
+  })
+  describe('userAgent', () => {
+    it('should construct user agent correctly', () => {
+      // FALABELLA_SELLER_ID/TECNOLOGÍA_USADA/VERSIÓN_TECNOLOGÍA/TIPO_INTEGRACIÓN/CÓDIGO_UNIDAD_DE_NEGOCIO
+      // test-seller-id/NodeJS/<version>/PROPIA/FACL
+      const ua = service.userAgent
+      expect(ua).toContain('test-seller-id/NodeJS/')
+      expect(ua).toContain('/PROPIA/FACL')
+    })
+  })
+
+  describe('createProduct', () => {
+    it('should convert payload to XML and send POST request', async () => {
+      mockHttpService.post.mockReturnValue(of({ data: { Success: true } }))
+
+      const payload = {
+        SellerSku: 'SKU123',
+        Name: 'Test Product'
+      }
+
+      await service.createProduct(payload)
+
+      expect(mockHttpService.post).toHaveBeenCalledTimes(1)
+      const [url, body, config] = mockHttpService.post.mock.calls[0]
+
+      expect(url).toContain('Action=ProductCreate')
+      expect(body).toContain('<Request>')
+      expect(body).toContain('<Product>')
+      expect(body).toContain('<SellerSku>SKU123</SellerSku>')
+
+      // Verify Headers
+      expect(config.headers['User-Agent']).toBeDefined()
+      expect(config.headers['Content-Type']).toBe('text/xml')
     })
   })
 })

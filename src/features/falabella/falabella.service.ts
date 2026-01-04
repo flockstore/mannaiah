@@ -4,6 +4,7 @@ import { createHmac } from 'crypto'
 import { FalabellaConfigService } from './config/falabella-config.service'
 import { HttpService } from '@nestjs/axios'
 import { lastValueFrom } from 'rxjs'
+import { Builder } from 'xml2js'
 
 @Injectable()
 export class FalabellaService {
@@ -46,6 +47,31 @@ export class FalabellaService {
       .join('&')
 
     return createHmac('sha256', apiKey).update(canonicalString).digest('hex')
+  }
+
+  /**
+   * Constructs the required User-Agent header.
+   * Format: SELLER_ID/TECNOLOGÍA_USADA/VERSIÓN_TECNOLOGÍA/TIPO_INTEGRACIÓN/CÓDIGO_UNIDAD_DE_NEGOCIO
+   */
+  get userAgent(): string {
+    const sellerId = this.config.sellerId || 'UNKNOWN_SELLER'
+    const tech = 'NodeJS'
+    const version = process.version.replace('v', '') // e.g. 18.20.4
+    const integration = 'PROPIA'
+    const country = this.config.country
+
+    return `${sellerId}/${tech}/${version}/${integration}/${country}`
+  }
+
+  /**
+   * Converts a JavaScript object to XML string.
+   */
+  private toXml(obj: any): string {
+    const builder = new Builder({
+      headless: true,
+      renderOpts: { pretty: false },
+    })
+    return builder.buildObject(obj)
   }
 
   /**
@@ -104,20 +130,37 @@ export class FalabellaService {
     const queryString = new URLSearchParams(queryParams).toString()
     const url = `${this.baseUrl}/?${queryString}&Signature=${signature}`
 
+    const headers: Record<string, string> = {
+      'User-Agent': this.userAgent,
+    }
+
+    let requestBody = body
+
+    // If body is XML string, set Content-Type
+    if (typeof body === 'string' && body.trim().startsWith('<')) {
+      headers['Content-Type'] = 'text/xml'
+    } else if (body && typeof body === 'object') {
+      // Default to JSON if not XML string, but we rely on axios default
+      // If we wanted to enforce JSON: headers['Content-Type'] = 'application/json'
+    }
+
     try {
-      if (body) {
+      if (requestBody) {
         const response = await lastValueFrom(
-          this.httpService.post<T>(url, body),
+          this.httpService.post<T>(url, requestBody, { headers }),
         )
         return response.data
       } else {
         const response = await lastValueFrom(
-          this.httpService.get<T>(url),
+          this.httpService.get<T>(url, { headers }),
         )
         return response.data
       }
     } catch (error) {
-      this.logger.error(`Failed to execute Falabella action: ${action}`, error)
+      this.logger.error(
+        `Failed to execute Falabella action: ${action}`,
+        error,
+      )
       throw error
     }
   }
@@ -131,17 +174,37 @@ export class FalabellaService {
   }
 
   async createProduct(payload: any): Promise<any> {
-    // Falabella ProductCreate expects XML usually, but we try JSON as per docs/implementation
-    // If XML is strictly required we need to convert payload to XML string
-    // For now assuming the payload passed is already acceptable or JSON
-    return this.sendRequest('ProductCreate', {}, payload)
+    // Wrap payload in Request -> Product and convert to XML
+    const xml = this.toXml({ Request: { Product: payload } })
+    return this.sendRequest('ProductCreate', {}, xml)
   }
 
   async updateProduct(payload: any): Promise<any> {
-    return this.sendRequest('ProductUpdate', {}, payload)
+    // Wrap payload in Request -> Product and convert to XML
+    const xml = this.toXml({ Request: { Product: payload } })
+    return this.sendRequest('ProductUpdate', {}, xml)
   }
 
   async uploadImage(payload: any): Promise<any> {
-    return this.sendRequest('Image', {}, payload)
+    // Payload usually: { SellerSku: '...', Images: [...] }
+    // Falabella Image action expects:
+    // <Request><Image><SellerSku>...</SellerSku><Images><Image>url1</Image>...</Images></Image></Request>
+    // We need to shape the payload correctly before calling this or do it here.
+    // Assuming the caller passes the raw attributes, let's shape it for XML.
+
+    // Check if payload matches XML structure expectation or simplify
+    // If payload is { SellerSku, Images: string[] }
+    const xmlPayload = {
+      Request: {
+        Image: {
+          SellerSku: payload.SellerSku,
+          Images: {
+            Image: payload.Images // Builder handles array as multiple tags
+          }
+        }
+      }
+    }
+    const xml = this.toXml(xmlPayload)
+    return this.sendRequest('Image', {}, xml)
   }
 }
