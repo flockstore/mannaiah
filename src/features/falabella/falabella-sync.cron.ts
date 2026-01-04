@@ -13,7 +13,7 @@ export class FalabellaSyncCron {
         private readonly config: FalabellaConfigService,
     ) { }
 
-    @Cron(CronExpression.EVERY_HOUR)
+    @Cron(CronExpression.EVERY_HOUR, { name: 'falabella-products-sync' })
     async handleCron() {
         if (!this.config.isConfigured()) {
             return
