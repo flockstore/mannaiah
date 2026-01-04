@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { HttpModule } from '@nestjs/axios'
 import { ProductsModule } from '../products/products.module'
+import { AssetsModule } from '../assets/assets.module'
 import { ConfigModule } from '@nestjs/config'
 import { validateUtil } from '../../core/config/validate.util'
 import { FalabellaEnvironmentVariables } from './config/falabella.env'
@@ -21,6 +22,7 @@ import { FalabellaSyncCron } from './falabella-sync.cron'
       validate: (config) => validateUtil(FalabellaEnvironmentVariables, config),
     }),
     ProductsModule,
+    AssetsModule,
   ],
   controllers: [FalabellaSyncController],
   providers: [
