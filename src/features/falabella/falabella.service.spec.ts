@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { FalabellaService } from './falabella.service'
 import { FalabellaConfigService } from './config/falabella-config.service'
 import axios from 'axios'
+import { ProductsService } from '../products/products.service'
 
 // Mock axios globally
 jest.mock('axios')
@@ -10,12 +11,17 @@ const mockedAxios = axios as jest.Mocked<typeof axios>
 describe('FalabellaService', () => {
   let service: FalabellaService
   let configServiceMock: any
+  let productsServiceMock: any
 
   const mockConfigService = {
     isConfigured: jest.fn(),
     apiKey: 'test-api-key',
     userId: 'test-user-id',
     userAgent: 'test-user-agent',
+  }
+
+  const mockProductsService = {
+    findAll: jest.fn(),
   }
 
   // Mock interceptors
@@ -44,6 +50,10 @@ describe('FalabellaService', () => {
         {
           provide: FalabellaConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: ProductsService,
+          useValue: mockProductsService,
         },
       ],
     }).compile()
@@ -137,4 +147,39 @@ describe('FalabellaService', () => {
       expect(config.headers.set).toHaveBeenCalledWith('SELLER_ID', 'test-user-agent');
     })
   })
+  describe('createProduct / syncProducts', () => {
+    beforeEach(() => {
+      (service as any).isEnabled = true; // force enable
+      mockAxiosInstance.get.mockResolvedValue({});
+      mockAxiosInstance.post = jest.fn().mockResolvedValue({ data: { success: true } });
+    });
+
+    it('should return sync result', async () => {
+      mockProductsService.findAll.mockResolvedValue([
+        { sku: 'SKU1', datasheets: [{ realm: 'default', name: 'P1', description: 'd' }], gallery: [] },
+        { sku: 'SKU2', datasheets: [{ realm: 'default', name: 'P2', description: 'd' }], gallery: [] }
+      ]);
+
+      const result = await service.syncProducts();
+
+      expect(mockProductsService.findAll).toHaveBeenCalled();
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(2);
+      expect(result.total).toBe(2);
+      expect(result.success).toBe(2);
+      expect(result.failed).toBe(0);
+    });
+
+    it('should report failures in sync', async () => {
+      mockProductsService.findAll.mockResolvedValue([
+        { sku: 'SKU1', datasheets: [{ realm: 'default', name: 'P1', description: 'd' }], gallery: [] }
+      ]);
+      mockAxiosInstance.post.mockRejectedValue(new Error('fail'));
+
+      const result = await service.syncProducts();
+
+      expect(result.failed).toBe(1);
+      expect(result.errors[0].sku).toBe('SKU1');
+      expect(result.errors[0].error).toContain('fail');
+    });
+  });
 })

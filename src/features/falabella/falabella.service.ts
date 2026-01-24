@@ -3,13 +3,18 @@ import { createHmac } from 'crypto'
 import axios, { AxiosInstance } from 'axios'
 import { FalabellaConfigService } from './config/falabella-config.service'
 
+import { ProductsService } from '../products/products.service'
+
 @Injectable()
 export class FalabellaService implements OnModuleInit {
   private readonly logger = new Logger(FalabellaService.name)
   private readonly client: AxiosInstance
   private isEnabled = false
 
-  constructor(private readonly config: FalabellaConfigService) {
+  constructor(
+    private readonly config: FalabellaConfigService,
+    private readonly productsService: ProductsService,
+  ) {
     this.client = axios.create({
       baseURL: 'https://sellercenter-api.falabella.com',
       headers: {
@@ -165,13 +170,6 @@ export class FalabellaService implements OnModuleInit {
   async createProduct(product: any): Promise<any> {
     this.checkEnabled();
 
-    // Ideally import Product type, but using any for now to avoid circular dependency issues if they arise, 
-    // or better: import the type at top level if not already. 
-    // The previous view_file showed Product is in another module.
-
-    // Dynamic import to avoid potential circular deps if Module structure is complex, 
-    // but standard import is preferred. I will rely on the property access.
-
     const { FalabellaMapper } = require('./utils/falabella.mapper'); // lazy load or move import to top
 
     try {
@@ -181,13 +179,6 @@ export class FalabellaService implements OnModuleInit {
         Product: productDTOs
       };
 
-      // The interceptor handles Action, Timestamp, Signature, etc.
-      // But for POST requests, typically Action is a query param OR body param.
-      // 'ProductCreate' action is usually sent as a query param `?Action=ProductCreate` 
-      // or in the body. The interceptor seems to put everything in `params` (query).
-      // Let's follow the interceptor pattern: arguments to `post` are (url, data, config).
-      // We pass `Action` in params.
-
       const response = await this.client.post('/', { Request: requestPayload }, {
         params: {
           Action: 'ProductCreate'
@@ -196,8 +187,41 @@ export class FalabellaService implements OnModuleInit {
 
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to create product ${product.sku}`, (error as Error).stack);
+      // Re-throw formatted if it's already an error, or just throw
+      // The logger handles the stack.
       throw error;
     }
+  }
+
+  /**
+   * Syncs all products to Falabella.
+   * @returns Sync result summary
+   */
+  async syncProducts(): Promise<{ total: number; success: number; failed: number; errors: any[] }> {
+    this.checkEnabled();
+    const products = await this.productsService.findAll();
+    const result = { total: products.length, success: 0, failed: 0, errors: [] as any[] };
+
+    for (const product of products) {
+      try {
+        await this.createProduct(product);
+        result.success++;
+      } catch (error) {
+        result.failed++;
+        result.errors.push({
+          sku: product.sku,
+          error: this.formatError(error)
+        });
+      }
+    }
+    return result;
+  }
+
+  private formatError(error: any): string {
+    if (axios.isAxiosError(error)) {
+      const detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      return `API Error: ${error.response?.status} - ${detail}`;
+    }
+    return error instanceof Error ? error.message : 'Unknown Error';
   }
 }

@@ -5,6 +5,9 @@ import { FalabellaEnvironmentVariables } from './config/falabella.env'
 import { FalabellaConfigService } from './config/falabella-config.service'
 import { FalabellaService } from './falabella.service'
 
+import { ProductsModule } from '../products/products.module'
+import { FalabellaController } from './falabella.controller'
+
 /**
  * Falabella feature module
  * Provides Falabella Seller Center API integration
@@ -14,8 +17,10 @@ import { FalabellaService } from './falabella.service'
     ConfigModule.forRoot({
       validate: (config) => validateUtil(FalabellaEnvironmentVariables, config),
     }),
+    ProductsModule,
   ],
+  controllers: [FalabellaController],
   providers: [FalabellaConfigService, FalabellaService],
   exports: [FalabellaConfigService, FalabellaService],
 })
-export class FalabellaModule {}
+export class FalabellaModule { }
