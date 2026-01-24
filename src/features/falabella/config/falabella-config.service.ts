@@ -43,4 +43,11 @@ export class FalabellaConfigService extends NestConfigService<FalabellaEnvironme
   get apiKey(): string | undefined {
     return this.get('FALABELLA_API_KEY', { infer: true })
   }
+  /**
+   * Gets the Falabella User Agent.
+   * @returns The User Agent or undefined.
+   */
+  get userAgent(): string | undefined {
+    return this.get('FALABELLA_USER_AGENT', { infer: true })
+  }
 }

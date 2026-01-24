@@ -1,17 +1,43 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { FalabellaService } from './falabella.service'
 import { FalabellaConfigService } from './config/falabella-config.service'
+import axios from 'axios'
+
+// Mock axios globally
+jest.mock('axios')
+const mockedAxios = axios as jest.Mocked<typeof axios>
 
 describe('FalabellaService', () => {
   let service: FalabellaService
+  let configServiceMock: any
 
   const mockConfigService = {
     isConfigured: jest.fn(),
     apiKey: 'test-api-key',
     userId: 'test-user-id',
+    userAgent: 'test-user-agent',
+  }
+
+  // Mock interceptors
+  const mockInterceptors = {
+    request: { use: jest.fn() },
+    response: { use: jest.fn() },
+  }
+
+  const mockAxiosInstance = {
+    interceptors: mockInterceptors,
+    get: jest.fn(),
   }
 
   beforeEach(async () => {
+    // Reset all mocks
+    jest.clearAllMocks()
+
+    // Setup axios.create to return our mock instance
+    // Note: mockReturnValue must be set BEFORE the module is compiled/service instantiated
+    mockedAxios.create.mockReturnValue(mockAxiosInstance as any)
+    mockedAxios.isAxiosError.mockImplementation((payload) => !!(payload && (payload as any).isAxiosError))
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FalabellaService,
@@ -23,62 +49,92 @@ describe('FalabellaService', () => {
     }).compile()
 
     service = module.get<FalabellaService>(FalabellaService)
-    // configService = module.get<FalabellaConfigService>(FalabellaConfigService)
+    configServiceMock = module.get(FalabellaConfigService)
 
-    // Reset mocks
-    jest.clearAllMocks()
+    // Ensure config allows logic to run
     mockConfigService.isConfigured.mockReturnValue(true)
   })
 
   it('should be defined', () => {
     expect(service).toBeDefined()
+    expect(axios.create).toHaveBeenCalled()
   })
 
-  describe('signRequest', () => {
-    it('should explode if not configured', () => {
+  it('should register interceptors on init', () => {
+    expect(mockInterceptors.request.use).toHaveBeenCalled()
+    expect(mockInterceptors.response.use).toHaveBeenCalled()
+  })
+
+  describe('onModuleInit', () => {
+    it('should enable service on successful connection', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ status: 200, data: { SuccessResponse: {} } })
+
+      await service.onModuleInit()
+
+      // Access private property for testing if possible, or verify behavior that depends on it
+      expect((service as any).isEnabled).toBe(true)
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/', { params: { Action: 'GetBrands' } })
+    })
+
+    it('should disable service on failed connection', async () => {
+      mockAxiosInstance.get.mockRejectedValue(new Error('Connection failed'))
+
+      await service.onModuleInit()
+
+      expect((service as any).isEnabled).toBe(false)
+    })
+
+    it('should disable service if not configured', async () => {
       mockConfigService.isConfigured.mockReturnValue(false)
-      expect(() => service.signRequest({})).toThrow(
-        'Falabella integration is disabled',
-      )
-    })
 
-    it('should generate a correct HMAC signature for simple params', () => {
-      // Known HMAC-SHA256 test vector or simple valid inputs
-      // Key: 'test-api-key'
-      // Data: 'Action=GetBrands'
-      // Expected SHA256 HMAC of 'Action=GetBrands' with key 'test-api-key'
-      // Calculated via online tool: 8d2c0e5... (let's rely on consistency, not hardcoded hash unless we calculate it)
+      await service.onModuleInit()
 
-      const params = { Action: 'GetBrands' }
-      const signature = service.signRequest(params)
-
-      expect(typeof signature).toBe('string')
-      expect(signature).toHaveLength(64) // SHA256 hex is 64 chars
-    })
-
-    it('should sort parameters alphabetically', () => {
-      // 'A=1&B=2' vs 'B=2&A=1' -> canonical should be 'A=1&B=2'
-      // If we pass in { B: '2', A: '1' }, it should produce same signature as { A: '1', B: '2' }
-
-      const sig1 = service.signRequest({ B: '2', A: '1' })
-      const sig2 = service.signRequest({ A: '1', B: '2' })
-
-      expect(sig1).toBe(sig2)
+      expect((service as any).isEnabled).toBe(false)
+      expect(mockAxiosInstance.get).not.toHaveBeenCalled()
     })
   })
 
   describe('testConnection', () => {
-    it('should return success and message if configured', () => {
-      const result = service.testConnection()
+    it('should return success if axios get succeeds', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ status: 200, data: {} })
+
+      const result = await service.testConnection()
       expect(result.success).toBe(true)
-      expect(result.message).toContain('Signature generated')
+      expect(result.message).toBe('Connection Successful')
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/', { params: { Action: 'GetBrands' } })
     })
 
-    it('should return failure if disabled', () => {
-      mockConfigService.isConfigured.mockReturnValue(false)
-      const result = service.testConnection()
+    it('should return failure if axios get fails', async () => {
+      mockAxiosInstance.get.mockRejectedValue(new Error('Network Error'))
+
+      const result = await service.testConnection()
       expect(result.success).toBe(false)
-      expect(result.message).toBe('Disabled')
+      expect(result.message).toContain('Network Error')
+    })
+  })
+
+  describe('Interceptors Logic', () => {
+    it('should have attached request interceptor', () => {
+      expect(mockInterceptors.request.use).toHaveBeenCalled()
+    })
+
+    it('should sign request in interceptor', () => {
+      // Retrieve the request interceptor callback
+      const requestInterceptor = mockInterceptors.request.use.mock.calls[0][0];
+
+      const config = {
+        params: { Action: 'Test' },
+        headers: {
+          set: jest.fn()
+        }
+      } as any;
+
+      const signedConfig = requestInterceptor(config);
+
+      expect(signedConfig.params).toHaveProperty('UserID', 'test-user-id');
+      expect(signedConfig.params).toHaveProperty('Signature');
+      expect(signedConfig.params['Signature']).toHaveLength(64); // SHA256 hex
+      expect(config.headers.set).toHaveBeenCalledWith('SELLER_ID', 'test-user-agent');
     })
   })
 })

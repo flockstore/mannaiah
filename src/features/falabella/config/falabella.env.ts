@@ -18,4 +18,10 @@ export class FalabellaEnvironmentVariables {
   @IsOptional()
   @IsString()
   FALABELLA_API_KEY?: string
+  /**
+   * Falabella User Agent (Seller ID).
+   */
+  @IsOptional()
+  @IsString()
+  FALABELLA_USER_AGENT?: string
 }

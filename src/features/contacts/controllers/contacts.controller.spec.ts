@@ -125,15 +125,25 @@ describe('ContactsController', () => {
       mockContactService.findAllPaginated.mockReturnValue(of(mockResult))
 
       controller
-        .findAll(1, 10, { email: 'test@example.com' })
-        .subscribe((result) => {
-          expect(result).toEqual(mockResult)
-          expect(mockContactService.findAllPaginated).toHaveBeenCalledWith(
-            { email: 'test@example.com' },
-            1,
-            10,
-          )
-          done()
+        .findAll(1, 10, undefined, undefined, undefined, { email: 'test@example.com' })
+        .subscribe({
+          next: (result) => {
+            try {
+              expect(result).toEqual(mockResult)
+              expect(mockContactService.findAllPaginated).toHaveBeenCalledWith(
+                { email: 'test@example.com' },
+                1,
+                10,
+                undefined,
+                { createdAt: -1 },
+                []
+              )
+              done()
+            } catch (err) {
+              done.fail(err)
+            }
+          },
+          error: (err) => done.fail(err),
         })
     })
   })
