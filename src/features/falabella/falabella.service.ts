@@ -19,6 +19,9 @@ export class FalabellaService implements OnModuleInit {
       baseURL: 'https://sellercenter-api.falabella.com',
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': this.config.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     })
 
@@ -55,7 +58,7 @@ export class FalabellaService implements OnModuleInit {
 
         const userId = this.config.userId!
         const apiKey = this.config.apiKey!
-        const userAgent = this.config.userAgent || 'Mannaiah/1.0'
+        const userAgent = this.config.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
         // Set User-Agent / Seller-ID headers
         if (config.headers) {
@@ -208,9 +211,11 @@ export class FalabellaService implements OnModuleInit {
         result.success++;
       } catch (error) {
         result.failed++;
+        const formattedErr = this.formatError(error);
+        this.logger.error(`Sync failed for SKU ${product.sku || 'unknown'}: ${formattedErr}`);
         result.errors.push({
           sku: product.sku,
-          error: this.formatError(error)
+          error: formattedErr
         });
       }
     }
@@ -219,7 +224,17 @@ export class FalabellaService implements OnModuleInit {
 
   private formatError(error: any): string {
     if (axios.isAxiosError(error)) {
-      const detail = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+      let detail = error.message;
+
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string' && (data.trim().startsWith('<!DOCTYPE') || data.includes('<html'))) {
+          detail = 'HTML Response (Likely Cloudflare 403 Forbidden/Block)';
+        } else {
+          detail = JSON.stringify(data);
+        }
+      }
+
       return `API Error: ${error.response?.status} - ${detail}`;
     }
     return error instanceof Error ? error.message : 'Unknown Error';
