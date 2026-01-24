@@ -19,7 +19,7 @@ export class FalabellaService implements OnModuleInit {
       baseURL: 'https://sellercenter-api.falabella.com',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': this.config.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': this.config.userAgent,
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.9',
       },
@@ -35,7 +35,7 @@ export class FalabellaService implements OnModuleInit {
     }
 
     try {
-      this.logger.log('Verifying Falabella connection...')
+      this.logger.log(`Verifying Falabella connection... (User-Agent: ${this.config.userAgent})`)
       const result = await this.testConnection()
       if (result.success) {
         this.isEnabled = true
@@ -58,7 +58,7 @@ export class FalabellaService implements OnModuleInit {
 
         const userId = this.config.userId!
         const apiKey = this.config.apiKey!
-        const userAgent = this.config.userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        const userAgent = this.config.userAgent
 
         // Set User-Agent / Seller-ID headers
         if (config.headers) {
