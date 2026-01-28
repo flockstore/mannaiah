@@ -13,7 +13,7 @@ export class ChatwootService implements OnModuleInit {
   constructor(
     private readonly configService: ChatwootConfigService,
     private readonly httpService: HttpService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     if (!this.configService.isConfigured()) {
@@ -32,14 +32,15 @@ export class ChatwootService implements OnModuleInit {
    */
   async verifyCredentials(): Promise<boolean> {
     try {
-      // Use a standard account API to verify credentials (e.g., list contacts with limit 1)
       const url = `${this.configService.url}/api/v1/accounts/${this.configService.accountId}/contacts?limit=1`
-      await lastValueFrom(
-        this.httpService.get(url, {
-          headers: {
-            api_access_token: this.configService.apiKey,
-          },
-        }),
+      await this.executeWithRetry(() =>
+        lastValueFrom(
+          this.httpService.get(url, {
+            headers: {
+              api_access_token: this.configService.apiKey,
+            },
+          }),
+        ),
       )
       this.logger.log('Chatwoot credentials verified successfully.')
       return true
@@ -55,16 +56,13 @@ export class ChatwootService implements OnModuleInit {
 
   /**
    * Syncs a single contact to Chatwoot.
-   * Strategies:
-   * 1. Search by email.
-   * 2. If found, update.
-   * 3. If not found, create.
    */
   async syncContact(contact: ContactDocument): Promise<void> {
     if (!this.isEnabled) return
 
     try {
       const payload = ChatwootMapper.toChatwootPayload(contact)
+      // This will now throw if search fails (e.g. 429 after retries), preventing false "not found" -> "create" loop
       const existingContactId = await this.findContactIdByEmail(contact.email)
 
       if (existingContactId) {
@@ -86,6 +84,7 @@ export class ChatwootService implements OnModuleInit {
     return `${maskedLocal}@${domain}`
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private formatError(error: any): string {
     if (error.response?.data) {
       return `${error.message} - Details: ${JSON.stringify(error.response.data)}`
@@ -95,7 +94,11 @@ export class ChatwootService implements OnModuleInit {
 
   private async findContactIdByEmail(email: string): Promise<number | null> {
     const url = `${this.configService.url}/api/v1/accounts/${this.configService.accountId}/contacts/search?q=${email}`
-    try {
+
+    // We do NOT support silent failure here for connection errors. 
+    // If connection fails, it should throw so syncContact aborts.
+    // We only return null if the response is valid but empty.
+    return this.executeWithRetry(async () => {
       const res = await lastValueFrom(
         this.httpService.get<{ payload: { id: number }[] }>(url, {
           headers: { api_access_token: this.configService.apiKey },
@@ -106,20 +109,17 @@ export class ChatwootService implements OnModuleInit {
         return res.data.payload[0].id
       }
       return null
-    } catch (error) {
-      this.logger.warn(
-        `Error searching contact ${this.maskEmail(email)}: ${(error as Error).message}`,
-      )
-      return null
-    }
+    })
   }
 
   private async createContact(payload: ChatwootContactPayload): Promise<void> {
     const url = `${this.configService.url}/api/v1/accounts/${this.configService.accountId}/contacts`
-    await lastValueFrom(
-      this.httpService.post(url, payload, {
-        headers: { api_access_token: this.configService.apiKey },
-      }),
+    await this.executeWithRetry(() =>
+      lastValueFrom(
+        this.httpService.post(url, payload, {
+          headers: { api_access_token: this.configService.apiKey },
+        }),
+      ),
     )
   }
 
@@ -128,10 +128,39 @@ export class ChatwootService implements OnModuleInit {
     payload: ChatwootContactPayload,
   ): Promise<void> {
     const url = `${this.configService.url}/api/v1/accounts/${this.configService.accountId}/contacts/${contactId}`
-    await lastValueFrom(
-      this.httpService.put(url, payload, {
-        headers: { api_access_token: this.configService.apiKey },
-      }),
+    await this.executeWithRetry(() =>
+      lastValueFrom(
+        this.httpService.put(url, payload, {
+          headers: { api_access_token: this.configService.apiKey },
+        }),
+      ),
     )
+  }
+
+  /**
+   * Executes a function with retry logic for 429 Too Many Requests.
+   */
+  private async executeWithRetry<T>(
+    operation: () => Promise<T>,
+    retries = 3,
+    delayMs = 1000,
+  ): Promise<T> {
+    try {
+      return await operation()
+    } catch (error: any) {
+      if (retries > 0 && error.response?.status === 429) {
+        this.logger.warn(
+          `Rate limit hit (429). Retrying in ${delayMs}ms. Retries left: ${retries}`,
+        )
+        await this.sleep(delayMs)
+        // Exponential backoff
+        return this.executeWithRetry(operation, retries - 1, delayMs * 2)
+      }
+      throw error
+    }
+  }
+
+  private sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }

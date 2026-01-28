@@ -5,7 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { HttpService } from '@nestjs/axios'
 import { ChatwootService } from './chatwoot.service'
 import { ChatwootConfigService } from './config/chatwoot-config.service'
-import { of } from 'rxjs'
+import { of, throwError } from 'rxjs'
 import { ContactDocument } from '../../contacts/interfaces/contact.interface'
 
 describe('ChatwootService', () => {
@@ -53,8 +53,6 @@ describe('ChatwootService', () => {
 
     it('should verify credentials if configured and sync enabled', async () => {
       mockConfigService.isConfigured.mockReturnValue(true)
-      // We must cast/force assignment because it's a readonly getter in the real class,
-      // but in the mock object it's a property.
       Object.defineProperty(mockConfigService, 'isSyncEnabled', { value: true })
 
       mockHttpService.get.mockReturnValue(of({ data: {} }))
@@ -74,16 +72,14 @@ describe('ChatwootService', () => {
     } as unknown as ContactDocument
 
     beforeEach(() => {
-      // Enable service for sync tests
       service['isEnabled'] = true
+      jest.clearAllMocks()
     })
 
     it('should update existing contact', async () => {
-      // Mock search returning an ID
       mockHttpService.get.mockReturnValue(
         of({ data: { payload: [{ id: 123 }] } }),
       )
-      // Mock update
       mockHttpService.put.mockReturnValue(of({ data: {} }))
 
       await service.syncContact(contact)
@@ -101,9 +97,7 @@ describe('ChatwootService', () => {
     })
 
     it('should create new contact if not found', async () => {
-      // Mock search returning empty
       mockHttpService.get.mockReturnValue(of({ data: { payload: [] } }))
-      // Mock create
       mockHttpService.post.mockReturnValue(of({ data: {} }))
 
       await service.syncContact(contact)
@@ -113,6 +107,44 @@ describe('ChatwootService', () => {
         expect.objectContaining({ email: 'test@example.com' }),
         expect.any(Object),
       )
+    })
+
+    it('should retry on 429 error and succeed', async () => {
+      mockHttpService.get
+        .mockReturnValueOnce(
+          throwError(() => ({ response: { status: 429, data: 'Rate Limit' } })),
+        )
+        .mockReturnValueOnce(of({ data: { payload: [{ id: 123 }] } }))
+
+      mockHttpService.put.mockReturnValue(of({ data: {} }))
+
+      const sleepSpy = jest
+        .spyOn(service as any, 'sleep')
+        .mockResolvedValue(undefined)
+
+      await service.syncContact(contact)
+
+      expect(sleepSpy).toHaveBeenCalledTimes(1)
+      expect(httpService.get).toHaveBeenCalledTimes(2)
+      expect(httpService.put).toHaveBeenCalledWith(
+        expect.stringContaining('/contacts/123'),
+        expect.any(Object),
+        expect.any(Object),
+      )
+    })
+
+    it('should abort sync if search fails permanently', async () => {
+      mockHttpService.get.mockReturnValue(
+        throwError(() => ({
+          message: 'Network Error',
+          response: { status: 500 }
+        })),
+      )
+
+      await service.syncContact(contact)
+
+      expect(httpService.post).not.toHaveBeenCalled()
+      expect(httpService.put).not.toHaveBeenCalled()
     })
   })
 })

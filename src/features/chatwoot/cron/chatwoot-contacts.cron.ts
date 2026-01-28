@@ -18,7 +18,7 @@ export class ChatwootContactsCron implements OnModuleInit {
     private readonly chatwootService: ChatwootService,
     private readonly contactService: ContactService,
     private readonly schedulerRegistry: SchedulerRegistry,
-  ) {}
+  ) { }
 
   onModuleInit() {
     if (!this.configService.isSyncEnabled) {
@@ -72,7 +72,7 @@ export class ChatwootContactsCron implements OnModuleInit {
     let hasMore = true
 
     // Concurrency limit for Chatwoot API calls to avoid rate limiting
-    const limitConcurrency = pLimit(10)
+    const limitConcurrency = pLimit(5)
 
     while (hasMore) {
       const resultObservable = this.contactService.findAllPaginated(
@@ -119,7 +119,7 @@ export class ChatwootContactsCron implements OnModuleInit {
    */
   async syncByEmails(emails: string[]) {
     this.logger.log(`Starting manual sync for ${emails.length} emails...`)
-    const limitConcurrency = pLimit(10)
+    const limitConcurrency = pLimit(5)
 
     const tasks = emails.map((email) =>
       limitConcurrency(async () => {
