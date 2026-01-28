@@ -125,7 +125,9 @@ describe('ContactsController', () => {
       mockContactService.findAllPaginated.mockReturnValue(of(mockResult))
 
       controller
-        .findAll(1, 10, undefined, undefined, undefined, { email: 'test@example.com' })
+        .findAll(1, 10, undefined, undefined, undefined, {
+          email: 'test@example.com',
+        })
         .subscribe({
           next: (result) => {
             try {
@@ -136,7 +138,7 @@ describe('ContactsController', () => {
                 10,
                 undefined,
                 { createdAt: -1 },
-                []
+                [],
               )
               done()
             } catch (err) {

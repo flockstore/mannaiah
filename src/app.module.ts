@@ -9,6 +9,7 @@ import { ProductsModule } from './features/products/products.module'
 import { AssetsModule } from './features/assets/assets.module'
 import { VariationsModule } from './features/variations/variations.module'
 import { FalabellaModule } from './features/falabella/falabella.module'
+import { ChatwootModule } from './features/chatwoot/chatwoot.module'
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { FalabellaModule } from './features/falabella/falabella.module'
     ProductsModule,
     AssetsModule,
     VariationsModule,
-    FalabellaModule,
+    // FalabellaModule,
+    ChatwootModule,
   ],
   controllers: [],
   providers: [],

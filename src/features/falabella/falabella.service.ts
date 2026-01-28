@@ -20,7 +20,7 @@ export class FalabellaService implements OnModuleInit {
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': this.config.userAgent,
-        'Accept': 'application/json, text/plain, */*',
+        Accept: 'application/json, text/plain, */*',
         'Accept-Language': 'en-US,en;q=0.9',
       },
     })
@@ -35,7 +35,9 @@ export class FalabellaService implements OnModuleInit {
     }
 
     try {
-      this.logger.log(`Verifying Falabella connection... (User-Agent: ${this.config.userAgent})`)
+      this.logger.log(
+        `Verifying Falabella connection... (User-Agent: ${this.config.userAgent})`,
+      )
       const result = await this.testConnection()
       if (result.success) {
         this.isEnabled = true
@@ -44,7 +46,9 @@ export class FalabellaService implements OnModuleInit {
         this.logger.warn(`Falabella integration disabled: ${result.message}`)
       }
     } catch (error) {
-      this.logger.warn(`Falabella integration disabled: Startup verification failed - ${(error as Error).message}`)
+      this.logger.warn(
+        `Falabella integration disabled: Startup verification failed - ${(error as Error).message}`,
+      )
     }
   }
 
@@ -111,7 +115,9 @@ export class FalabellaService implements OnModuleInit {
       (error) => {
         if (axios.isAxiosError(error)) {
           if (error.response) {
-            this.logger.error(`Falabella Error Response: ${error.response.status} - ${JSON.stringify(error.response.data)}`)
+            this.logger.error(
+              `Falabella Error Response: ${error.response.status} - ${JSON.stringify(error.response.data)}`,
+            )
           } else if (error.request) {
             this.logger.error('Falabella No Response Received')
           } else {
@@ -128,9 +134,10 @@ export class FalabellaService implements OnModuleInit {
    * @param str The string to encode
    */
   private rfc3986Encode(str: string): string {
-    return encodeURIComponent(str).replace(/[!'()*]/g, (c) =>
-      '%' + c.charCodeAt(0).toString(16).toUpperCase(),
-    );
+    return encodeURIComponent(str).replace(
+      /[!'()*]/g,
+      (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase(),
+    )
   }
 
   /**
@@ -142,16 +149,16 @@ export class FalabellaService implements OnModuleInit {
 
     try {
       await this.client.get('/', {
-        params: { Action: 'GetBrands' }
+        params: { Action: 'GetBrands' },
       })
       return { success: true, message: 'Connection Successful' }
     } catch (error) {
-      let msg = 'Unknown Error';
+      let msg = 'Unknown Error'
       if (axios.isAxiosError(error)) {
-        msg = error.message;
-        if (error.response) msg += ` (${error.response.status})`;
+        msg = error.message
+        if (error.response) msg += ` (${error.response.status})`
       } else if (error instanceof Error) {
-        msg = error.message;
+        msg = error.message
       }
       return { success: false, message: `Connection Failed: ${msg}` }
     }
@@ -162,7 +169,9 @@ export class FalabellaService implements OnModuleInit {
    */
   private checkEnabled() {
     if (!this.isEnabled) {
-      throw new Error('Falabella integration is disabled (Configuration or Connection failed)')
+      throw new Error(
+        'Falabella integration is disabled (Configuration or Connection failed)',
+      )
     }
   }
 
@@ -171,28 +180,32 @@ export class FalabellaService implements OnModuleInit {
    * @param product The internal product entity
    */
   async createProduct(product: any): Promise<any> {
-    this.checkEnabled();
+    this.checkEnabled()
 
-    const { FalabellaMapper } = require('./utils/falabella.mapper'); // lazy load or move import to top
+    const { FalabellaMapper } = require('./utils/falabella.mapper') // lazy load or move import to top
 
     try {
-      const productDTOs = FalabellaMapper.toProductDTOs(product);
+      const productDTOs = FalabellaMapper.toProductDTOs(product)
 
       const requestPayload = {
-        Product: productDTOs
-      };
+        Product: productDTOs,
+      }
 
-      const response = await this.client.post('/', { Request: requestPayload }, {
-        params: {
-          Action: 'ProductCreate'
-        }
-      });
+      const response = await this.client.post(
+        '/',
+        { Request: requestPayload },
+        {
+          params: {
+            Action: 'ProductCreate',
+          },
+        },
+      )
 
-      return response.data;
+      return response.data
     } catch (error) {
       // Re-throw formatted if it's already an error, or just throw
       // The logger handles the stack.
-      throw error;
+      throw error
     }
   }
 
@@ -200,43 +213,58 @@ export class FalabellaService implements OnModuleInit {
    * Syncs all products to Falabella.
    * @returns Sync result summary
    */
-  async syncProducts(): Promise<{ total: number; success: number; failed: number; errors: any[] }> {
-    this.checkEnabled();
-    const products = await this.productsService.findAll();
-    const result = { total: products.length, success: 0, failed: 0, errors: [] as any[] };
+  async syncProducts(): Promise<{
+    total: number
+    success: number
+    failed: number
+    errors: any[]
+  }> {
+    this.checkEnabled()
+    const products = await this.productsService.findAll()
+    const result = {
+      total: products.length,
+      success: 0,
+      failed: 0,
+      errors: [] as any[],
+    }
 
     for (const product of products) {
       try {
-        await this.createProduct(product);
-        result.success++;
+        await this.createProduct(product)
+        result.success++
       } catch (error) {
-        result.failed++;
-        const formattedErr = this.formatError(error);
-        this.logger.error(`Sync failed for SKU ${product.sku || 'unknown'}: ${formattedErr}`);
+        result.failed++
+        const formattedErr = this.formatError(error)
+        this.logger.error(
+          `Sync failed for SKU ${product.sku || 'unknown'}: ${formattedErr}`,
+        )
         result.errors.push({
           sku: product.sku,
-          error: formattedErr
-        });
+          error: formattedErr,
+        })
       }
     }
-    return result;
+    return result
   }
 
   private formatError(error: any): string {
     if (axios.isAxiosError(error)) {
-      let detail = error.message;
+      let detail = error.message
 
       if (error.response?.data) {
-        const data = error.response.data;
-        if (typeof data === 'string' && (data.trim().startsWith('<!DOCTYPE') || data.includes('<html'))) {
-          detail = 'HTML Response (Likely Cloudflare 403 Forbidden/Block)';
+        const data = error.response.data
+        if (
+          typeof data === 'string' &&
+          (data.trim().startsWith('<!DOCTYPE') || data.includes('<html'))
+        ) {
+          detail = 'HTML Response (Likely Cloudflare 403 Forbidden/Block)'
         } else {
-          detail = JSON.stringify(data);
+          detail = JSON.stringify(data)
         }
       }
 
-      return `API Error: ${error.response?.status} - ${detail}`;
+      return `API Error: ${error.response?.status} - ${detail}`
     }
-    return error instanceof Error ? error.message : 'Unknown Error';
+    return error instanceof Error ? error.message : 'Unknown Error'
   }
 }

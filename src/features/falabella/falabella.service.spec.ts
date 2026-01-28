@@ -42,7 +42,9 @@ describe('FalabellaService', () => {
     // Setup axios.create to return our mock instance
     // Note: mockReturnValue must be set BEFORE the module is compiled/service instantiated
     mockedAxios.create.mockReturnValue(mockAxiosInstance as any)
-    mockedAxios.isAxiosError.mockImplementation((payload) => !!(payload && (payload as any).isAxiosError))
+    mockedAxios.isAxiosError.mockImplementation(
+      (payload) => !!(payload && payload.isAxiosError),
+    )
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -77,13 +79,18 @@ describe('FalabellaService', () => {
 
   describe('onModuleInit', () => {
     it('should enable service on successful connection', async () => {
-      mockAxiosInstance.get.mockResolvedValue({ status: 200, data: { SuccessResponse: {} } })
+      mockAxiosInstance.get.mockResolvedValue({
+        status: 200,
+        data: { SuccessResponse: {} },
+      })
 
       await service.onModuleInit()
 
       // Access private property for testing if possible, or verify behavior that depends on it
       expect((service as any).isEnabled).toBe(true)
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/', { params: { Action: 'GetBrands' } })
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/', {
+        params: { Action: 'GetBrands' },
+      })
     })
 
     it('should disable service on failed connection', async () => {
@@ -111,7 +118,9 @@ describe('FalabellaService', () => {
       const result = await service.testConnection()
       expect(result.success).toBe(true)
       expect(result.message).toBe('Connection Successful')
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/', { params: { Action: 'GetBrands' } })
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/', {
+        params: { Action: 'GetBrands' },
+      })
     })
 
     it('should return failure if axios get fails', async () => {
@@ -130,56 +139,73 @@ describe('FalabellaService', () => {
 
     it('should sign request in interceptor', () => {
       // Retrieve the request interceptor callback
-      const requestInterceptor = mockInterceptors.request.use.mock.calls[0][0];
+      const requestInterceptor = mockInterceptors.request.use.mock.calls[0][0]
 
       const config = {
         params: { Action: 'Test' },
         headers: {
-          set: jest.fn()
-        }
-      } as any;
+          set: jest.fn(),
+        },
+      } as any
 
-      const signedConfig = requestInterceptor(config);
+      const signedConfig = requestInterceptor(config)
 
-      expect(signedConfig.params).toHaveProperty('UserID', 'test-user-id');
-      expect(signedConfig.params).toHaveProperty('Signature');
-      expect(signedConfig.params['Signature']).toHaveLength(64); // SHA256 hex
-      expect(config.headers.set).toHaveBeenCalledWith('SELLER_ID', 'test-user-agent');
+      expect(signedConfig.params).toHaveProperty('UserID', 'test-user-id')
+      expect(signedConfig.params).toHaveProperty('Signature')
+      expect(signedConfig.params['Signature']).toHaveLength(64) // SHA256 hex
+      expect(config.headers.set).toHaveBeenCalledWith(
+        'SELLER_ID',
+        'test-user-agent',
+      )
     })
   })
   describe('createProduct / syncProducts', () => {
     beforeEach(() => {
-      (service as any).isEnabled = true; // force enable
-      mockAxiosInstance.get.mockResolvedValue({});
-      mockAxiosInstance.post = jest.fn().mockResolvedValue({ data: { success: true } });
-    });
+      ;(service as any).isEnabled = true // force enable
+      mockAxiosInstance.get.mockResolvedValue({})
+      mockAxiosInstance.post = jest
+        .fn()
+        .mockResolvedValue({ data: { success: true } })
+    })
 
     it('should return sync result', async () => {
       mockProductsService.findAll.mockResolvedValue([
-        { sku: 'SKU1', datasheets: [{ realm: 'default', name: 'P1', description: 'd' }], gallery: [] },
-        { sku: 'SKU2', datasheets: [{ realm: 'default', name: 'P2', description: 'd' }], gallery: [] }
-      ]);
+        {
+          sku: 'SKU1',
+          datasheets: [{ realm: 'default', name: 'P1', description: 'd' }],
+          gallery: [],
+        },
+        {
+          sku: 'SKU2',
+          datasheets: [{ realm: 'default', name: 'P2', description: 'd' }],
+          gallery: [],
+        },
+      ])
 
-      const result = await service.syncProducts();
+      const result = await service.syncProducts()
 
-      expect(mockProductsService.findAll).toHaveBeenCalled();
-      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(2);
-      expect(result.total).toBe(2);
-      expect(result.success).toBe(2);
-      expect(result.failed).toBe(0);
-    });
+      expect(mockProductsService.findAll).toHaveBeenCalled()
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(2)
+      expect(result.total).toBe(2)
+      expect(result.success).toBe(2)
+      expect(result.failed).toBe(0)
+    })
 
     it('should report failures in sync', async () => {
       mockProductsService.findAll.mockResolvedValue([
-        { sku: 'SKU1', datasheets: [{ realm: 'default', name: 'P1', description: 'd' }], gallery: [] }
-      ]);
-      mockAxiosInstance.post.mockRejectedValue(new Error('fail'));
+        {
+          sku: 'SKU1',
+          datasheets: [{ realm: 'default', name: 'P1', description: 'd' }],
+          gallery: [],
+        },
+      ])
+      mockAxiosInstance.post.mockRejectedValue(new Error('fail'))
 
-      const result = await service.syncProducts();
+      const result = await service.syncProducts()
 
-      expect(result.failed).toBe(1);
-      expect(result.errors[0].sku).toBe('SKU1');
-      expect(result.errors[0].error).toContain('fail');
-    });
-  });
+      expect(result.failed).toBe(1)
+      expect(result.errors[0].sku).toBe('SKU1')
+      expect(result.errors[0].error).toContain('fail')
+    })
+  })
 })

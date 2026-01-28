@@ -23,4 +23,4 @@ import { FalabellaController } from './falabella.controller'
   providers: [FalabellaConfigService, FalabellaService],
   exports: [FalabellaConfigService, FalabellaService],
 })
-export class FalabellaModule { }
+export class FalabellaModule {}

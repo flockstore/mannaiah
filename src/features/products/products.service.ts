@@ -24,7 +24,7 @@ export class ProductsService {
     private readonly productsRepository: ProductsRepository,
     private assetsService: AssetsService,
     private variationsService: VariationsService,
-  ) { }
+  ) {}
 
   /**
    * Validates the product gallery.

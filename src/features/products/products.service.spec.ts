@@ -89,7 +89,9 @@ describe('ProductsService', () => {
     })
 
     it('should fail if gallery variation not found', async () => {
-      mockVariationsService.findOne.mockRejectedValueOnce(new NotFoundException())
+      mockVariationsService.findOne.mockRejectedValueOnce(
+        new NotFoundException(),
+      )
       const dto = {
         sku: 'SKU_VAR_FAIL',
         gallery: [{ assetId: 'a1', variationIds: ['bad_var'] }],
