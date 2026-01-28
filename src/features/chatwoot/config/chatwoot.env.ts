@@ -28,12 +28,12 @@ export class ChatwootEnvironmentVariables {
   CHATWOOT_ACCOUNT_ID?: string
 
   /**
-   * Enable/Disable Contact Sync Cron.
+   * Cron expression for Contact Sync (e.g., "0 0 * * *").
+   * Default: Every day at midnight "0 0 * * *".
    */
   @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === 'true' || value === true)
-  CHATWOOT_CONTACTS_CRON?: boolean = false
+  @IsString()
+  CHATWOOT_CONTACTS_CRON?: string = '0 0 * * *'
 
   /**
    * Enable/Disable Contact Sync Feature globally.

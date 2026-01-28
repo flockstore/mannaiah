@@ -43,8 +43,8 @@ export class ChatwootConfigService extends NestConfigService<ChatwootEnvironment
     return this.get('CHATWOOT_ACCOUNT_ID', { infer: true })
   }
 
-  get isCronEnabled(): boolean {
-    return this.get('CHATWOOT_CONTACTS_CRON', { infer: true }) || false
+  get cronSchedule(): string {
+    return this.get('CHATWOOT_CONTACTS_CRON', { infer: true }) || '0 0 * * *'
   }
 
   get isSyncEnabled(): boolean {

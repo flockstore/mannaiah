@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { Cron, CronExpression } from '@nestjs/schedule'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import { SchedulerRegistry } from '@nestjs/schedule'
+import { CronJob } from 'cron'
 import { ChatwootConfigService } from '../config/chatwoot-config.service'
 import { ChatwootService } from '../chatwoot.service'
 import { ContactService } from '../../contacts/services/contact.service'
@@ -8,7 +9,7 @@ import pLimit from 'p-limit'
 import { lastValueFrom } from 'rxjs'
 
 @Injectable()
-export class ChatwootContactsCron {
+export class ChatwootContactsCron implements OnModuleInit {
   private readonly logger = new Logger(ChatwootContactsCron.name)
   private isRunning = false
 
@@ -16,11 +17,30 @@ export class ChatwootContactsCron {
     private readonly configService: ChatwootConfigService,
     private readonly chatwootService: ChatwootService,
     private readonly contactService: ContactService,
+    private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT) // Default schedule, can be adjusted
+  onModuleInit() {
+    if (!this.configService.isSyncEnabled) {
+      this.logger.log('Chatwoot sync is disabled. Skipping cron scheduling.')
+      return
+    }
+
+    const schedule = this.configService.cronSchedule
+    this.logger.log(`Scheduling Chatwoot sync cron with schedule: ${schedule}`)
+
+    const job = new CronJob(schedule, () => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      this.handleCron()
+    })
+
+    this.schedulerRegistry.addCronJob('chatwoot_contacts_sync', job)
+    job.start()
+  }
+
   async handleCron() {
-    if (!this.configService.isCronEnabled) {
+    // Double check enablement in case it changed at runtime (unlikely for envs but good practice)
+    if (!this.configService.isSyncEnabled) {
       return
     }
 

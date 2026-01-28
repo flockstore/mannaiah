@@ -4,15 +4,27 @@ import { ChatwootContactsCron } from './chatwoot-contacts.cron'
 import { ChatwootService } from '../chatwoot.service'
 import { ChatwootConfigService } from '../config/chatwoot-config.service'
 import { ContactService } from '../../contacts/services/contact.service'
+import { SchedulerRegistry } from '@nestjs/schedule'
+import { CronJob } from 'cron'
 import { of } from 'rxjs'
+
+jest.mock('cron', () => {
+  return {
+    CronJob: jest.fn().mockImplementation(() => ({
+      start: jest.fn(),
+    })),
+  }
+})
 
 describe('ChatwootContactsCron', () => {
   let cron: ChatwootContactsCron
   let chatwootService: ChatwootService
   let contactService: ContactService
+  let schedulerRegistry: SchedulerRegistry
 
   const mockConfigService = {
-    isCronEnabled: true,
+    isSyncEnabled: true,
+    cronSchedule: '0 0 * * *',
   }
 
   const mockChatwootService = {
@@ -25,6 +37,10 @@ describe('ChatwootContactsCron', () => {
     findOne: jest.fn(),
   }
 
+  const mockSchedulerRegistry = {
+    addCronJob: jest.fn(),
+  }
+
   beforeEach(async () => {
     jest.clearAllMocks()
     const module: TestingModule = await Test.createTestingModule({
@@ -33,16 +49,48 @@ describe('ChatwootContactsCron', () => {
         { provide: ChatwootConfigService, useValue: mockConfigService },
         { provide: ChatwootService, useValue: mockChatwootService },
         { provide: ContactService, useValue: mockContactService },
+        { provide: SchedulerRegistry, useValue: mockSchedulerRegistry },
       ],
     }).compile()
 
     cron = module.get<ChatwootContactsCron>(ChatwootContactsCron)
     chatwootService = module.get<ChatwootService>(ChatwootService)
     contactService = module.get<ContactService>(ContactService)
+    schedulerRegistry = module.get<SchedulerRegistry>(SchedulerRegistry)
   })
 
   it('should be defined', () => {
     expect(cron).toBeDefined()
+  })
+
+  describe('onModuleInit', () => {
+    it('should schedule cron if sync is enabled', () => {
+      // Mock true is default in mockConfigService setup
+      cron.onModuleInit()
+      expect(mockSchedulerRegistry.addCronJob).toHaveBeenCalledWith(
+        'chatwoot_contacts_sync',
+        expect.any(Object),
+      )
+    })
+
+    it('should not schedule cron if sync is disabled', async () => {
+      const disabledConfig = { isSyncEnabled: false, cronSchedule: '0 0 * * *' }
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          ChatwootContactsCron,
+          { provide: ChatwootConfigService, useValue: disabledConfig },
+          { provide: ChatwootService, useValue: mockChatwootService },
+          { provide: ContactService, useValue: mockContactService },
+          { provide: SchedulerRegistry, useValue: mockSchedulerRegistry },
+        ],
+      }).compile()
+
+      const disabledCron =
+        module.get<ChatwootContactsCron>(ChatwootContactsCron)
+
+      disabledCron.onModuleInit()
+      expect(mockSchedulerRegistry.addCronJob).not.toHaveBeenCalled()
+    })
   })
 
   describe('handleCron', () => {
@@ -62,20 +110,27 @@ describe('ChatwootContactsCron', () => {
       expect(chatwootService.syncContact).toHaveBeenCalled()
     })
 
-    it('should not run if disabled', async () => {
-      // Re-compile module with disabled config to ensure clean state or use spy
-      const disabledConfig = { isCronEnabled: false }
+    it('should not run if disabled (runtime check)', async () => {
+      // Create a cron instance with a config that returns false for enabled
+      // We need to mock the property access
+      const runtimeDisabledConfig = {
+        isSyncEnabled: false,
+        cronSchedule: '0 0 * * *',
+      }
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           ChatwootContactsCron,
-          { provide: ChatwootConfigService, useValue: disabledConfig },
+          { provide: ChatwootConfigService, useValue: runtimeDisabledConfig },
           { provide: ChatwootService, useValue: mockChatwootService },
           { provide: ContactService, useValue: mockContactService },
+          { provide: SchedulerRegistry, useValue: mockSchedulerRegistry },
         ],
       }).compile()
 
       const disabledCron =
         module.get<ChatwootContactsCron>(ChatwootContactsCron)
+
       await disabledCron.handleCron()
       expect(contactService.findAllPaginated).not.toHaveBeenCalled()
     })

@@ -33,13 +33,11 @@ describe('ChatwootController', () => {
   })
 
   describe('triggerSync', () => {
-    it('should throw BadRequest if sync disabled', async () => {
+    it('should throw BadRequest if sync disabled', () => {
       Object.defineProperty(mockConfigService, 'isSyncEnabled', {
         value: false,
       })
-      await expect(controller.triggerSync()).rejects.toThrow(
-        BadRequestException,
-      )
+      expect(() => controller.triggerSync()).toThrow(BadRequestException)
     })
 
     it('should trigger syncAll when no emails provided', () => {
