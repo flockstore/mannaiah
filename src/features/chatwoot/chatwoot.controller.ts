@@ -1,7 +1,9 @@
 import { Controller, Post, Query, BadRequestException } from '@nestjs/common'
 import { ChatwootContactsCron } from './cron/chatwoot-contacts.cron'
 import { ChatwootConfigService } from './config/chatwoot-config.service'
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger'
 
+@ApiTags('Chatwoot')
 @Controller('chatwoot')
 export class ChatwootController {
   constructor(
@@ -9,6 +11,27 @@ export class ChatwootController {
     private readonly configService: ChatwootConfigService,
   ) {}
 
+  @ApiOperation({ summary: 'Trigger contact synchronization' })
+  @ApiQuery({
+    name: 'emails',
+    required: false,
+    description: 'Comma-separated list of emails to sync',
+    example: 'user1@example.com,user2@example.com',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Sync scheduled successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Scheduled full contact sync' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Sync disabled via configuration',
+  })
   @Post('sync')
   triggerSync(@Query('emails') emails?: string) {
     if (!this.configService.isSyncEnabled) {

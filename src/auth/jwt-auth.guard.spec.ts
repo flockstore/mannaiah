@@ -8,140 +8,140 @@ import { Strategy } from 'passport-jwt'
 
 @Injectable()
 class MockJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-    constructor() {
-        super({
-            jwtFromRequest: () => null,
-            secretOrKey: 'mock',
-        })
-    }
+  constructor() {
+    super({
+      jwtFromRequest: () => null,
+      secretOrKey: 'mock',
+    })
+  }
 
-    validate(payload: unknown) {
-        return payload
-    }
+  validate(payload: unknown) {
+    return payload
+  }
 }
 
 describe('JwtAuthGuard', () => {
-    let guard: JwtAuthGuard
-    let configService: ConfigService
+  let guard: JwtAuthGuard
+  let configService: ConfigService
 
-    const mockConfigService = {
-        nodeEnv: Environment.Development,
-        devAuthToken: undefined,
-    }
+  const mockConfigService = {
+    nodeEnv: Environment.Development,
+    devAuthToken: undefined,
+  }
 
-    const mockExecutionContext = {
-        switchToHttp: jest.fn().mockReturnValue({
-            getRequest: jest.fn().mockReturnValue({
-                headers: {
-                    authorization: null,
-                },
-            }),
+  const mockExecutionContext = {
+    switchToHttp: jest.fn().mockReturnValue({
+      getRequest: jest.fn().mockReturnValue({
+        headers: {
+          authorization: null,
+        },
+      }),
+    }),
+  } as unknown as ExecutionContext
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        JwtAuthGuard,
+        MockJwtStrategy,
+        { provide: ConfigService, useValue: mockConfigService },
+      ],
+    }).compile()
+
+    guard = module.get<JwtAuthGuard>(JwtAuthGuard)
+    configService = module.get<ConfigService>(ConfigService)
+  })
+
+  it('should be defined', () => {
+    expect(guard).toBeDefined()
+  })
+
+  describe('canActivate', () => {
+    it('should allow request with correct dev token in development', () => {
+      Object.defineProperty(mockConfigService, 'nodeEnv', {
+        value: Environment.Development,
+      })
+      Object.defineProperty(mockConfigService, 'devAuthToken', {
+        value: 'secret-token',
+      })
+
+      const request = {
+        headers: { authorization: 'Bearer secret-token' },
+        user: undefined,
+      }
+
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => request,
         }),
-    } as unknown as ExecutionContext
+      } as ExecutionContext
 
-    beforeEach(async () => {
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                JwtAuthGuard,
-                MockJwtStrategy,
-                { provide: ConfigService, useValue: mockConfigService },
-            ],
-        }).compile()
-
-        guard = module.get<JwtAuthGuard>(JwtAuthGuard)
-        configService = module.get<ConfigService>(ConfigService)
+      const result = guard.canActivate(context)
+      expect(result).toBe(true)
+      expect(request.user).toBeDefined()
+      expect(request.user['sub']).toBe('dev-admin')
     })
 
-    it('should be defined', () => {
-        expect(guard).toBeDefined()
+    it('should fall back to super.canActivate if token does not match', async () => {
+      Object.defineProperty(mockConfigService, 'nodeEnv', {
+        value: Environment.Development,
+      })
+      Object.defineProperty(mockConfigService, 'devAuthToken', {
+        value: 'secret-token',
+      })
+
+      const request = {
+        headers: { authorization: 'Bearer wrong-token' },
+      }
+
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => request,
+          getResponse: () => ({}),
+          getNext: () => ({}),
+        }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
+        getArgs: () => [],
+        getType: () => 'http',
+      } as unknown as ExecutionContext
+
+      try {
+        await guard.canActivate(context)
+      } catch (e) {
+        expect(true).toBe(true)
+      }
     })
 
-    describe('canActivate', () => {
-        it('should allow request with correct dev token in development', () => {
-            Object.defineProperty(mockConfigService, 'nodeEnv', {
-                value: Environment.Development,
-            })
-            Object.defineProperty(mockConfigService, 'devAuthToken', {
-                value: 'secret-token',
-            })
+    it('should validation fail if not in development mode', async () => {
+      Object.defineProperty(mockConfigService, 'nodeEnv', {
+        value: Environment.Production,
+      })
+      Object.defineProperty(mockConfigService, 'devAuthToken', {
+        value: 'secret-token',
+      })
 
-            const request = {
-                headers: { authorization: 'Bearer secret-token' },
-                user: undefined,
-            }
+      const request = {
+        headers: { authorization: 'Bearer secret-token' },
+      }
 
-            const context = {
-                switchToHttp: () => ({
-                    getRequest: () => request,
-                }),
-            } as ExecutionContext
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => request,
+          getResponse: () => ({}),
+          getNext: () => ({}),
+        }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
+        getArgs: () => [],
+        getType: () => 'http',
+      } as unknown as ExecutionContext
 
-            const result = guard.canActivate(context)
-            expect(result).toBe(true)
-            expect(request.user).toBeDefined()
-            expect(request.user['sub']).toBe('dev-admin')
-        })
-
-        it('should fall back to super.canActivate if token does not match', async () => {
-            Object.defineProperty(mockConfigService, 'nodeEnv', {
-                value: Environment.Development,
-            })
-            Object.defineProperty(mockConfigService, 'devAuthToken', {
-                value: 'secret-token',
-            })
-
-            const request = {
-                headers: { authorization: 'Bearer wrong-token' },
-            }
-
-            const context = {
-                switchToHttp: () => ({
-                    getRequest: () => request,
-                    getResponse: () => ({}),
-                    getNext: () => ({}),
-                }),
-                getHandler: () => ({}),
-                getClass: () => ({}),
-                getArgs: () => [],
-                getType: () => 'http',
-            } as unknown as ExecutionContext
-
-            try {
-                await guard.canActivate(context)
-            } catch (e) {
-                expect(true).toBe(true)
-            }
-        })
-
-        it('should validation fail if not in development mode', async () => {
-            Object.defineProperty(mockConfigService, 'nodeEnv', {
-                value: Environment.Production,
-            })
-            Object.defineProperty(mockConfigService, 'devAuthToken', {
-                value: 'secret-token',
-            })
-
-            const request = {
-                headers: { authorization: 'Bearer secret-token' },
-            }
-
-            const context = {
-                switchToHttp: () => ({
-                    getRequest: () => request,
-                    getResponse: () => ({}),
-                    getNext: () => ({}),
-                }),
-                getHandler: () => ({}),
-                getClass: () => ({}),
-                getArgs: () => [],
-                getType: () => 'http',
-            } as unknown as ExecutionContext
-
-            try {
-                await guard.canActivate(context)
-            } catch (e) {
-                expect(true).toBe(true)
-            }
-        })
+      try {
+        await guard.canActivate(context)
+      } catch (e) {
+        expect(true).toBe(true)
+      }
     })
+  })
 })
