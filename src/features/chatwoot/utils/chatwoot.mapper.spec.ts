@@ -16,10 +16,13 @@ describe('ChatwootMapper', () => {
                 name: 'John Doe',
                 email: 'test@example.com',
                 phone_number: undefined,
+                additional_attributes: {
+                    city: undefined,
+                    country_code: 'CO',
+                },
                 custom_attributes: {
                     documentType: undefined,
                     documentNumber: undefined,
-                    cityCode: undefined,
                 },
             })
         })
@@ -44,16 +47,16 @@ describe('ChatwootMapper', () => {
             expect(payload.phone_number).toBe('+573006769994')
         })
 
-        it('should prepend +57 even if number starts with 57 but lacks +', () => {
-            // As per current simple logic: "doesn't start with +" -> add default code +57
+        it('should prepend + prefix if number starts with country code but missing plus', () => {
             const contact = {
                 email: 'test@example.com',
                 phone: '573001234567',
             } as ContactDocument
 
             const payload = ChatwootMapper.toChatwootPayload(contact)
-            // Result is +57573001234567
-            expect(payload.phone_number).toBe('+57573001234567')
+            // Logic: starts with 57... -> just prepend + -> +57300... 
+            // Fixes the double 57 issue
+            expect(payload.phone_number).toBe('+573001234567')
         })
 
         it('should sanitize phone numbers with spaces/dashes if they are otherwise valid E164', () => {

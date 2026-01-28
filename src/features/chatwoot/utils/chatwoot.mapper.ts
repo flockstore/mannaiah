@@ -4,10 +4,14 @@ export interface ChatwootContactPayload {
   name: string
   email: string
   phone_number?: string
+  additional_attributes?: {
+    city?: string
+    country_code?: string
+    [key: string]: any
+  }
   custom_attributes: {
     documentType?: string
     documentNumber?: string
-    cityCode?: string
     [key: string]: any
   }
 }
@@ -20,10 +24,13 @@ export class ChatwootMapper {
       name,
       email: contact.email,
       phone_number: ChatwootMapper.validatePhone(contact.phone),
+      additional_attributes: {
+        city: contact.cityCode, // Is cityCode a code or name? Assuming name/code string for now.
+        country_code: 'CO', // Defaulting to Colombia
+      },
       custom_attributes: {
         documentType: contact.documentType,
         documentNumber: contact.documentNumber,
-        cityCode: contact.cityCode,
       },
     }
   }
@@ -31,7 +38,7 @@ export class ChatwootMapper {
   private static validatePhone(phone?: string): string | undefined {
     if (!phone) return undefined
 
-    const DEFAULT_COUNTRY_CODE = '+57'
+    const DEFAULT_COUNTRY_CODE = '57' // No plus here for easier checking
 
     // Remove all non-digit and non-plus characters
     let sanitized = phone.replace(/[^\d+]/g, '')
@@ -39,23 +46,25 @@ export class ChatwootMapper {
     // If empty after sanitization, return undefined
     if (!sanitized) return undefined
 
-    // If it starts with +, check if it's E.164 valid
+    // 1. Check if it already has a plus
     if (sanitized.startsWith('+')) {
-      // Basic E.164 check: + followed by 1-15 digits
+      // E.164 check: + followed by 1-15 digits
       if (/^\+[1-9]\d{1,14}$/.test(sanitized)) {
         return sanitized
       }
-      // If starts with + but invalid (e.g. + without digits or too long), 
-      // we might want to strip + and try adding default, or just fail. 
-      // For now, if provided with + country code, assume user meant that.
       return undefined
     }
 
-    // If no +, assume local number and prepend default country code
-    // Check if it looks like a valid number length (e.g. 10 digits for Colombia mobile)
-    // To be safe for general inputs, we just prepend and validate
-    sanitized = `${DEFAULT_COUNTRY_CODE}${sanitized}`
+    // 2. If no plus, check if it starts with the default country code
+    if (sanitized.startsWith(DEFAULT_COUNTRY_CODE)) {
+      // e.g. 573001234567 -> just add + -> +573001234567
+      sanitized = `+${sanitized}`
+    } else {
+      // e.g. 3001234567 -> add +57 -> +573001234567
+      sanitized = `+${DEFAULT_COUNTRY_CODE}${sanitized}`
+    }
 
+    // 3. Final validation
     if (/^\+[1-9]\d{1,14}$/.test(sanitized)) {
       return sanitized
     }
