@@ -13,7 +13,7 @@ export class ChatwootService implements OnModuleInit {
   constructor(
     private readonly configService: ChatwootConfigService,
     private readonly httpService: HttpService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     if (!this.configService.isConfigured()) {
@@ -32,7 +32,8 @@ export class ChatwootService implements OnModuleInit {
    */
   async verifyCredentials(): Promise<boolean> {
     try {
-      const url = `${this.configService.url}/platform/api/v1/accounts/${this.configService.accountId}`
+      // Use a standard account API to verify credentials (e.g., list contacts with limit 1)
+      const url = `${this.configService.url}/api/v1/accounts/${this.configService.accountId}/contacts?limit=1`
       await lastValueFrom(
         this.httpService.get(url, {
           headers: {
