@@ -1,4 +1,4 @@
-import { IsEnum, IsNumber, IsString } from 'class-validator'
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
 
 /**
  * Environment variables for the application core.
@@ -41,4 +41,12 @@ export class CoreEnvironmentVariables {
    */
   @IsString()
   LOGTO_AUDIENCE: string
+
+  /**
+   * Optional static auth token for development mode bypass.
+   * Only active if NODE_ENV is 'development'.
+   */
+  @IsString()
+  @IsOptional()
+  DEV_AUTH_TOKEN?: string
 }

@@ -59,4 +59,8 @@ export class ConfigService extends NestConfigService<CoreEnvironmentVariables> {
     }
     return audience
   }
+
+  get devAuthToken(): string | undefined {
+    return this.get('DEV_AUTH_TOKEN', { infer: true })
+  }
 }

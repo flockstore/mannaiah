@@ -13,7 +13,7 @@ export class ChatwootService implements OnModuleInit {
   constructor(
     private readonly configService: ChatwootConfigService,
     private readonly httpService: HttpService,
-  ) { }
+  ) {}
 
   async onModuleInit() {
     if (!this.configService.isConfigured()) {
