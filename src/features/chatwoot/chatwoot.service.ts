@@ -74,9 +74,23 @@ export class ChatwootService implements OnModuleInit {
       }
     } catch (error) {
       this.logger.error(
-        `Failed to sync contact ${contact.email}: ${(error as Error).message}`,
+        `Failed to sync contact ${this.maskEmail(contact.email)}: ${this.formatError(error)}`,
       )
     }
+  }
+
+  private maskEmail(email: string): string {
+    const [local, domain] = email.split('@')
+    if (!local || !domain) return email
+    const maskedLocal = local.length > 2 ? `${local.slice(0, 2)}***` : '***'
+    return `${maskedLocal}@${domain}`
+  }
+
+  private formatError(error: any): string {
+    if (error.response?.data) {
+      return `${error.message} - Details: ${JSON.stringify(error.response.data)}`
+    }
+    return error.message
   }
 
   private async findContactIdByEmail(email: string): Promise<number | null> {
@@ -94,7 +108,7 @@ export class ChatwootService implements OnModuleInit {
       return null
     } catch (error) {
       this.logger.warn(
-        `Error searching contact ${email}: ${(error as Error).message}`,
+        `Error searching contact ${this.maskEmail(email)}: ${(error as Error).message}`,
       )
       return null
     }

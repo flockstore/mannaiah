@@ -1,9 +1,19 @@
 import { Controller, Post, Query, BadRequestException } from '@nestjs/common'
 import { ChatwootContactsCron } from './cron/chatwoot-contacts.cron'
 import { ChatwootConfigService } from './config/chatwoot-config.service'
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger'
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard'
+import { UseGuards } from '@nestjs/common'
 
 @ApiTags('Chatwoot')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('chatwoot')
 export class ChatwootController {
   constructor(
